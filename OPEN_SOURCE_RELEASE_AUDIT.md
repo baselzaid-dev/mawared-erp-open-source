@@ -1,41 +1,50 @@
-# Pre-publication audit and migration status
+# Community release audit
 
-**Status: NOT APPROVED FOR PUBLICATION.** This repository must remain private until a complete security review, source import, and build/test verification are complete.
+## Decision
 
-## Scope checked
+**NO-GO for publication.** The private candidate is suitable for maintainer review. Verify the remaining release gates below before a public launch.
 
-The original repository's default-branch tree was inventoried: 945 tracked files (1,101 tree entries including directories), approximately 10.34 MB of tracked blob content. This is an inventory, **not** a complete content scan.
+## Migration
 
-The new repository was created separately with a new Git history. Only selected, manually reviewed text files have been imported so far. The old repository's commit history was not imported.
+The source branch inventory contained **945 tracked files**. **723 source paths** were retrieved by immutable Git blob ID and checked in the isolated review workspace. **675 paths** were imported or adapted for the candidate. The remaining **270** were withheld, replaced, or superseded by community documentation. These are path counts, so the candidate also retains original preparation files and adds new files.
 
-## Initial observations
+The candidate includes the Express API, Prisma schema and 26 migration files, React web application, Android Kotlin and Compose application, source tests, dependency locks, and localization. The existing destination Git history is the parent history. The source repository history was not imported.
 
-- `backend/README.md` contains documented demo accounts and a common demo password. Do not import this documentation unchanged. Confirm that any demo accounts are non-production and that their credentials have never been used on live systems.
-- `keystore.properties.example` contains a developer-specific Windows file path. Replace it with a generic placeholder before importing.
-- `metadata.json` and some UI files contain Arabic text. Review and translate user-facing descriptions where the English-only release policy applies, without altering program semantics.
-- `backend/.env.example` and `backend/.env.production.example` were manually checked for obvious hardcoded credentials. They contain placeholders, not verified live credentials. This does not establish that all other files are safe.
-- The original repository contains internal logs and plans (for example `AI_WORK_LOG.md`, `docs/execution/`, `docs/agents/`, `docs/rc2/`, `.cursor/`, `.idea/`). These must not be bulk-copied without an explicit review.
-- Some code modules contain Arabic strings. They were deferred rather than automatically translated.
+| Withheld material | Reason |
+| --- | --- |
+| Internal project notes, editor metadata, operational documentation, reports, and patch archives | Private project and deployment history |
+| Deployment, backup, restore, production recovery CLI and runbooks, and staging-specific preparation tools and tests | Installation-specific data, access, or operational assumptions |
+| Pending and manual migration SQL outside the reviewed migration chain | Local setup uses the Prisma migration sequence |
+| Original launcher assets, screenshot baseline, and screenshot generator | Unverified artwork provenance. The app uses a new vector |
+| Original Gradle wrapper JAR | It did not match the configured Gradle 9.4.1 release. Replaced with the matching upstream wrapper |
+| Original environment examples, private endpoints, and fixture identities | Replaced with reserved or loopback examples and synthetic values |
 
-## Exclusion policy
+## Security review
 
-Do not copy: original Git history, real `.env` files, private keys, signing keys, local IDE state, database dumps, backups, production logs, personal or customer data, internal work logs, unreviewed planning documents, or deployment-specific confidential values.
+- **Tenant isolation.** Company administrators could query installation-wide aggregates through `GET /api/owner/metrics`. The route now scopes each database count to the authenticated company. The regression test checks the query filters.
+- **Seed and migrations.** The original seed used a shared default password. The candidate requires a unique local seed password and creates random passwords for the other fixtures. Database write commands require matching dedicated loopback targets. If an older seed was ever run outside a disposable environment, rotate any affected accounts.
+- **HTTP access.** The API defaults to a loopback listener, uses an explicit browser-origin allow-list, and trusts forwarding headers only when a proxy hop count is configured. Authentication, authorization, logging, upload limits, and raw SQL call sites were reviewed. The two remaining unsafe-named raw SQL calls in request handlers use fixed SQL.
+- **Android.** Removed the fixed staging destination and generic dotenv-to-build-config injection. Public API URL configuration rejects embedded user credentials and query parameters. Recovery uses a configured HTTPS host instead of an unverified custom scheme. Keystore credentials remain external.
+- **Dependencies.** npm audit initially reported 16 affected entries for each Node application. Both updated lockfiles returned zero reported advisories from the registry at the time of verification. Android dependency scanning requires the resolved Gradle graph.
+- **Secret patterns.** A redacting scan covered the final staged files and all 43 distinct file versions in the destination's original reachable history. No configured pattern matched after verifying the placeholder examples. Gitleaks could not be downloaded locally. CI includes a checksum-pinned Gitleaks run. GitHub secret scanning status is unverified.
+- **Database safety.** No production database connection, migration, seed, export, or reset was performed. No production credential or database dump was selected for transfer. Pattern scans and targeted review cannot establish the absence of every unrecognized secret.
 
-Retain as needed after review: application source, backend and web code, Android build configuration, database schema and migrations, dependency lockfiles, tests, safe example configuration, and public developer documentation.
+## Test evidence
 
-## Mandatory gates before making public
+| Area | Commands and results |
+| --- | --- |
+| Backend | `npm ci`, `npm run typecheck`, `npm run build`, and `npm test -- --exclude 'tests/*.postgres.test.ts'` passed. 113 files and 1,123 tests passed. |
+| Database guard | `node --test backend/scripts/local-database.test.mjs` passed all 4 tests. |
+| PostgreSQL | `MAWARED_PG_TEST_REQUIRE=1 npm run test:postgres` stopped at its prerequisite check. `initdb`, `pg_ctl`, `createdb`, and `psql` were unavailable as a usable local toolchain. Fresh migration and seed execution remain unverified. |
+| Web | `npm ci`, `npm run typecheck`, `npm run lint`, `npm run build`, and the Vitest suite passed. 19 files and 94 tests passed. |
+| Web Chromium | 15 Playwright tests passed using a separately installed Chromium 153 binary and the same synthetic fixture. The standard Playwright browser download failed in the local runner. Firefox and WebKit were not run. |
+| Android | The Gradle wrapper JAR and distribution checksum match the official Gradle 9.4.1 checksums. Android XML parsed, and 24 JavaScript dependency-scan verdict tests passed. Gradle could not download its distribution locally, so the Android build, JVM tests, lint, and resolved dependency audit remain unverified. |
+| Release tooling | The staged diff passed whitespace checks. The custom history scanner, Python syntax check, shell syntax check, and CI YAML and permission validation passed. |
 
-- [ ] Import all required application and test files with a new history.
-- [ ] Review every imported file for credentials, tokens, private URLs, personal data, and sensitive configuration.
-- [ ] Run a dedicated secret scanner against the complete candidate tree; manually inspect findings.
-- [ ] Review third-party licenses and any copied assets for redistribution rights.
-- [ ] Verify the MIT license attribution and ownership of all included code.
-- [ ] Translate public-facing documentation into English.
-- [ ] Verify backend, web, and Android builds and tests in a safe environment.
-- [ ] Review GitHub Actions workflows for forked pull-request security.
-- [ ] Configure protected default branch, required checks, and private vulnerability reporting.
-- [ ] Obtain explicit owner approval before changing repository visibility.
+## Release gates
 
-## Important limitation
-
-The connector supports GitHub file operations, but it does not run the project's tests or a complete local filesystem-based secret scan. Any claim of full security clearance or build readiness would be premature.
+1. Obtain passing PostgreSQL migration, seed, and integration results, and passing Android debug build, unit test, lint, and resolved dependency audit results.
+2. Run a dedicated redacting Git history scan and review its findings. Continue route-level and abuse-case security review against the candidate.
+3. Confirm distribution rights for included contributions and complete third-party attribution for any distributable bundle. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+4. Confirm a private disclosure channel and enforce maintainer reviews and required CI checks in GitHub. The written review policy does not enforce repository settings.
+5. Obtain separate maintainer approval for merging and for a public release.

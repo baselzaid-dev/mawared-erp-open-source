@@ -1,20 +1,7 @@
-# Security Policy
+# Security policy
 
-## Supported versions
+The release candidate is under review. Supported public versions will be listed here when a release is published.
 
-During release preparation, no supported public release or response-time SLA is promised. After the first release, security support will be best-effort for the latest maintained version unless a formal policy is published.
+To report a potential vulnerability, use the repository's **Report a vulnerability** option if enabled. If unavailable, use a private contact channel published on the maintainer's GitHub profile to request a private disclosure channel. Keep details and proofs of concept out of public issues and discussions.
 
-## Reporting a vulnerability
-
-Do not publish exploitable vulnerability details in public issues.
-
-Use GitHub's private vulnerability reporting / security advisory feature if it is enabled for this repository. Otherwise, contact the repository owner through a private GitHub contact channel. Include the affected component, impact, reproduction steps, and a suggested mitigation if available.
-
-Do not include real customer data, credentials, tokens, or production database dumps in reports. Please allow time for investigation and remediation before public disclosure. No bug-bounty program is currently promised.
-
-## Safe testing
-
-- Test only systems you own or are explicitly authorized to assess.
-- Do not attempt to access another company's tenant or personal data.
-- Never commit secrets, private keys, production configuration, logs containing personal data, or database exports.
-- If a credential was exposed, revoke or rotate it immediately. Removing it from the latest commit does not remove it from Git history.
+Include the affected revision, prerequisites, reproducible steps using synthetic data, and observed impact. Omit credential values, database rows, and real employee information. For an exposed credential, identify its path, line, category, and recommended rotation or revocation.

@@ -1,29 +1,12 @@
-# Community guide
+# Community
 
-Mawared ERP aims to grow as a community-driven open-source project.
+Use GitHub Issues for reproducible bugs and scoped feature proposals. Include the revision and commands you tested, and keep examples synthetic. Use [the security policy](../SECURITY.md) for suspected vulnerabilities.
 
-## How you can help
+## Good first issues
 
-- Report reproducible bugs with a minimal, sanitized example.
-- Improve English documentation and translations.
-- Write unit, integration, and accessibility tests.
-- Suggest improvements to HR, approvals, payroll, purchasing, and usability.
-- Review changes for authorization, privacy, and tenant isolation.
+- Verify installation on a clean local database and improve unclear instructions.
+- Compare Arabic and English UI copy for a permission-denied or empty state.
+- Add a small permission regression test using a synthetic second company.
+- Document web and Android coverage of one workflow with code links.
 
-## Good first contributions
-
-Small documentation corrections, tests for pure utility functions, clearer error messages, and accessibility improvements are good starting points. Please check open issues before beginning.
-
-## Proposing a feature
-
-Open an issue explaining the problem, the intended users, expected behavior, security/privacy implications, and how it could be tested. Large changes should be discussed before implementation.
-
-## Pull requests
-
-Keep changes focused; explain what changed and why. Include test results, screenshots only when they contain fictional data, and migration notes when relevant. Never paste real credentials or private customer data into issues, commits, or pull requests.
-
-## Project expectations
-
-The project is under development, and maintainers may not be able to review contributions immediately. Contributions are reviewed for correctness, maintainability, security, and alignment with the project goals.
-
-See [CONTRIBUTING.md](../CONTRIBUTING.md), [SECURITY.md](../SECURITY.md), and [CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md).
+Maintainers can apply a good-first-issue label once the expected result and test instructions are clear.

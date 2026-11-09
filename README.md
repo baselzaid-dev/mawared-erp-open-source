@@ -1,76 +1,44 @@
 # Mawared ERP
 
-**Open-source release candidate — not yet approved for public use.**
+Mawared ERP is a self-hosted, multi-company ERP and HR application. It brings employee administration, purchasing, payroll, finance, and work coordination into one workspace. The project aims to make ERP workflows inspectable and adaptable for contributors working with their own data and infrastructure.
 
-Mawared ERP is a work-in-progress, multi-tenant enterprise resource planning platform intended to help organizations manage everyday operations in one place. The codebase includes a TypeScript/Express backend with Prisma and PostgreSQL, a React-based web client, and a Kotlin/Jetpack Compose Android application.
+This repository is a community release candidate. Review the [release audit](OPEN_SOURCE_RELEASE_AUDIT.md) for the verification status and publication gates.
 
-> **Current status:** This repository is being prepared from a separate private development repository with a fresh Git history. The complete application has **not** yet been imported, independently tested, or security-cleared. Do not deploy it to production or use it with real employee/customer data.
+## Features
 
-## Project goals
-
-- Organize employee and departmental information.
-- Support attendance, leave requests, approvals, and payroll-related workflows.
-- Support purchasing, vendors, and other operational modules.
-- Apply role-based authorization and company-level data isolation.
-- Provide web and Android experiences.
-
-These are project goals and areas represented in the source project, **not a guarantee that every feature is complete or production-ready**.
-
-## Technology
-
-| Layer | Technology |
+| Area | Implemented in the source |
 | --- | --- |
-| API | Node.js, TypeScript, Express |
-| Data | PostgreSQL, Prisma |
-| Web | React, TypeScript, Vite |
-| Android | Kotlin, Jetpack Compose |
-| Tests | Vitest and project-specific Android tests |
+| Identity and access | Company login, separate platform administration, role permissions, scoped delegation, session revocation, and MFA for protected accounts |
+| HR | Employees, departments, attendance, corrections, exemptions, leave approvals, and salary records |
+| Finance and payroll | Payroll periods, components, adjustments, payments, ledger posting, chart of accounts, cost centers, and journal entries |
+| Purchasing | Vendors, requests, quotations, orders, receipts, returns, and reports |
+| Collaboration | Tasks, training, chat, notifications, report templates, and attachments |
+| Clients | React company portal and Kotlin Android client with Arabic and English localization |
 
-## Repository layout
+Feature coverage varies by client. The [roadmap](docs/ROADMAP.md) separates planned work and verification from implemented modules. No statutory payroll, accounting, or tax compliance certification is claimed.
 
-| Directory | Purpose |
+## Stack and layout
+
+| Path | Purpose |
 | --- | --- |
-| `backend/` | API, Prisma schema, migrations, backend tests |
-| `web/` | Browser application and tests |
-| `app/` | Android application and tests |
-| `scripts/` | Open-source preparation and safety checks |
-| `docs/` | Community and developer documentation |
+| [backend/](backend/) | TypeScript, Express, Prisma, PostgreSQL, and Vitest |
+| [web/](web/) | React, Vite, TypeScript, Vitest, and Playwright |
+| [app/](app/) | Kotlin, Jetpack Compose, Retrofit, and Android resources |
+| [docs/](docs/) | Contributor and self-hosting documentation |
+| [scripts/](scripts/) | Release and dependency checks |
 
-**Note:** Some of these directories are still incomplete in this release-preparation repository.
+The clients call an Express HTTP API. The backend validates credentials and permissions and uses Prisma to query PostgreSQL. The [architecture guide](docs/ARCHITECTURE.md) describes the company and platform boundaries and where to trace requests.
 
-## Getting started
+## Run locally
 
-The complete source tree and a verified end-to-end setup are not yet available here. Once the import is complete, the intended development workflow is:
+Use Node.js 24 and npm, a dedicated PostgreSQL 16 development database, and a local copy of this repository. For Android, install JDK 21 and Android SDK 36. Follow the [installation guide](docs/INSTALLATION.md) to provision PostgreSQL, configure both `.env` files, generate local keys, apply migrations, and sign in with a synthetic development account. The [database and environment guide](docs/DATABASE_AND_SECRETS.md) lists the settings and safeguards.
 
-1. Install Node.js and the Android development tools needed by the relevant module.
-2. Provision your **own local development PostgreSQL database**. Never connect to the original project's database.
-3. Copy the relevant `.env.example` file to an untracked local `.env`, then supply your own locally generated secrets.
-4. Install dependencies using the module's lockfile.
-5. Apply the reviewed Prisma migrations to your own **disposable development database**.
-6. Run the module's documented build and test commands.
+Start the backend with `npm run dev` in `backend/` and the web app with `npm run dev` in `web/`. Run `./gradlew :app:assembleDebug :app:testDebugUnitTest` from the root for Android. The [development guide](docs/DEVELOPMENT.md) lists type checks, tests, lint, integration tests, and the Chromium fixture.
 
-See [Database and secrets safety](docs/DATABASE_AND_SECRETS.md) for mandatory precautions. **Do not execute migrations or seed scripts against production or shared databases.**
+## Contribute
 
-## Contributing
-
-We welcome bug reports, documentation improvements, tests, accessibility improvements, and carefully scoped code contributions after the initial public release. See [CONTRIBUTING.md](CONTRIBUTING.md). Please discuss major changes in an issue before opening a large pull request.
-
-## Security and privacy
-
-This repository must never include real database credentials, API tokens, production configuration, employee records, customer information, backups, or private signing keys. Report suspected vulnerabilities privately; see [SECURITY.md](SECURITY.md).
-
-## Roadmap
-
-1. Complete a clean, reviewed source import.
-2. Verify third-party licensing and remove private operational materials.
-3. Run full secret scanning and test/build checks.
-4. Publish accurate setup instructions and example development data.
-5. Obtain explicit owner approval before making this repository public.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md) before opening a pull request. Use the [community guide](docs/COMMUNITY.md) for first-issue ideas and the [security policy](SECURITY.md) for private vulnerability reporting. See [security architecture](docs/SECURITY_ARCHITECTURE.md) before changing access controls or handling credentials.
 
 ## License
 
-Licensed under the [MIT License](LICENSE), subject to verification that all included code and assets can legally be distributed under this license.
-
-## Project status and limitations
-
-This project is under active development. APIs, database migrations, interfaces, and documentation may change. No production support or security response-time guarantee is currently offered.
+Project-authored code is offered under the [MIT License](LICENSE). See [Third-party notices](THIRD_PARTY_NOTICES.md) for third-party components and outstanding license checks.

@@ -1,37 +1,7 @@
-# Contributing to Mawared ERP
+# Contributing
 
-Thank you for your interest in contributing.
+Read the [development guide](docs/DEVELOPMENT.md) and [Code of Conduct](CODE_OF_CONDUCT.md). Use a focused branch from `main`, open a pull request, and describe the behavior, verification, and any database or permission changes. Include only synthetic test data.
 
-**This repository is still being prepared for its initial source release.** Please do not assume the application is buildable until the source code and verified setup instructions have been published.
+Maintainers review changes before merging. Pull requests should have an approving maintainer review and passing applicable checks. Authentication, authorization, migrations, uploads, and CI changes require a review of their security and compatibility implications. Keep automatic merging disabled for unreviewed contributions.
 
-## Before you contribute
-
-- Review existing issues and pull requests.
-- Open an issue before making substantial architectural changes.
-- Never commit API keys, passwords, access tokens, private keys, customer data, production logs, database dumps, or signing credentials.
-- Test only systems and data you own or are explicitly authorized to assess.
-
-## Development workflow
-
-1. Fork the repository after the public release.
-2. Create a focused branch.
-3. Make a small, reviewable change.
-4. Add or update tests where appropriate.
-5. Run the documented checks and report their results.
-6. Open a pull request describing the change, its risks, and the testing performed.
-
-## Quality and security expectations
-
-- Preserve authorization checks and company/tenant isolation.
-- Do not trust tenant identifiers supplied by untrusted request bodies.
-- Do not embed server credentials in Android client code.
-- Document breaking changes and known limitations.
-- Never claim a feature is implemented unless the behavior is present and appropriately tested.
-
-## Pull request checklist
-
-- [ ] The change has a clear purpose and limited scope.
-- [ ] Relevant tests and type checks pass, or failures are explained.
-- [ ] Authorization and tenant-isolation implications have been reviewed.
-- [ ] Documentation is updated where needed.
-- [ ] No secrets or sensitive information are included.
+Report vulnerabilities privately using [SECURITY.md](SECURITY.md).
