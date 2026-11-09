@@ -146,7 +146,25 @@ jobs:
         with:
           log-accepted-android-sdk-licenses: false
           packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
-      - run: ./gradlew --no-daemon :app:assembleDebug :app:testDebugUnitTest :app:lintDebug :app:mawaredDependencySbom
+      - run: ./gradlew --no-daemon --console=plain :app:assembleDebug :app:testDebugUnitTest :app:lintDebug :app:mawaredDependencySbom
+      - name: Summarize Android unit tests
+        run: |
+          python3 - <<'PYTHON'
+          from pathlib import Path
+          from xml.etree import ElementTree
+
+          files = list(Path("app/build/test-results/testDebugUnitTest").glob("TEST-*.xml"))
+          if not files:
+              raise SystemExit("Android unit test reports are missing")
+          totals = {key: 0 for key in ("tests", "failures", "errors", "skipped")}
+          for path in files:
+              suite = ElementTree.parse(path).getroot()
+              for key in totals:
+                  totals[key] += int(suite.get(key, 0))
+          print("Android unit tests: " + ", ".join(f"{key}={value}" for key, value in totals.items()))
+          if totals["tests"] <= totals["skipped"] or totals["failures"] or totals["errors"]:
+              raise SystemExit("Android unit tests did not complete successfully")
+          PYTHON
       - run: node --test scripts/security/android_scan_verdict.test.mjs
       - name: Scan the resolved Android dependencies
         run: |
