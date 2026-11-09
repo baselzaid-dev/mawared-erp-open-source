@@ -2,7 +2,7 @@
 
 ## Decision
 
-**NO-GO for publication.** The private candidate is suitable for maintainer review. Verify the remaining release gates below before a public launch.
+**Public community preview.** The maintainer opened the repository for community review and local development. The checks below record the tested scope. The remaining gates apply to production use and versioned distribution.
 
 ## Migration
 
@@ -58,4 +58,4 @@ The [GitHub Actions run for the verified source revision](https://github.com/bas
 1. Complete route-level and abuse-case security review for publication. Passing tests and scans cover specific behaviors and patterns.
 2. Confirm distribution rights for included contributions and complete third-party attribution for any distributable bundle. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 3. Confirm a private disclosure channel and enforce maintainer reviews and required CI checks in GitHub. The written review policy does not enforce repository settings.
-4. Obtain separate maintainer approval for merging and for a public release.
+4. Agree on supported versions, maintenance, and distribution scope before issuing a versioned release.

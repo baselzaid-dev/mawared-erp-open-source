@@ -46,6 +46,12 @@ npm run dev
 
 Open the Vite address, normally `http://localhost:5173`. `VITE_API_BASE_URL` is the API origin. Add custom frontend origins to the backend's `CORS_ORIGINS`.
 
+### First sign-in
+
+Use the demo company code `CMP-DEMO`, the account `admin@demo.example.test`, and the password you set in `MAWARED_DEV_SEED_PASSWORD`. Follow the MFA enrollment screen if prompted. Keep the API and web terminals running while you try the demo.
+
+The API liveness endpoint is `http://127.0.0.1:3000/healthz`. If the web page loads and sign-in fails, check that the API is running, the migration and seed commands succeeded, and the web origin matches the backend allowlist.
+
 ## Android
 
 Open the root project in Android Studio and select `debug`. The default emulator URL is `http://10.0.2.2:3000/`.
