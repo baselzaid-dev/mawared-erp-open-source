@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="metric_template_id">المعرّف</string>
+    <string name="metric_template_employee_id">معرّف الموظف</string>
+    <string name="metric_template_period_id">معرّف الفترة</string>
+    <string name="metric_template_request_number">رقم الطلب</string>
+    <string name="metric_template_requester_name">اسم مقدم الطلب</string>
+    <string name="metric_template_employee_count">عدد الموظفين</string>
+    <string name="metric_template_job_title">المسمى الوظيفي</string>
+    <string name="metric_template_department_id">معرّف القسم</string>
+    <string name="metric_template_joining_date">تاريخ الانضمام</string>
+    <string name="metric_template_is_archived">حالة الأرشفة</string>
+    <string name="metric_template_archived_at">تاريخ الأرشفة</string>
+    <string name="metric_template_include_archived">تضمين المؤرشفين</string>
+    <string name="metric_template_archived_count">عدد المؤرشفين</string>
+    <string name="metric_template_payroll_period_id">معرّف فترة الرواتب</string>
+    <string name="metric_template_base_salary">الراتب الأساسي</string>
+    <string name="metric_template_payment_date">تاريخ الدفع</string>
+    <string name="metric_template_reference">المرجع</string>
+    <string name="metric_template_voided_at">تاريخ الإلغاء</string>
+    <string name="metric_template_legacy_migration">سجل مرحّل</string>
+    <string name="metric_template_payment_count">عدد الدفعات</string>
+    <string name="metric_template_posted_count">دفعات مسجلة</string>
+    <string name="metric_template_voided_count">دفعات ملغاة</string>
+    <string name="metric_template_cancelled_order_count">عدد الطلبات الملغاة</string>
+    <string name="metric_template_average_score">متوسط التقييم</string>
+    <string name="metric_template_delivery_mode">طريقة التسليم</string>
+</resources>

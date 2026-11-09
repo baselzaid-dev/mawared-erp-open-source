@@ -1,0 +1,2078 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Company {
+  id        String   @id @default(uuid())
+  code      String   @unique(map: "Company_code_key")
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users                       User[]
+  employees                   Employee[]
+  departments                 Department[]
+  roles                       Role[]
+  leaveRequests               LeaveRequest[]
+  attendances                 Attendance[]
+  notifications               Notification[]
+  auditLogs                   AuditLog[]
+  chartOfAccounts             ChartOfAccount[]
+  costCenters                 CostCenter[]
+  journalEntries              JournalEntry[]
+  journalEntryLines           JournalEntryLine[]
+  payrollLedgerPostings       PayrollLedgerPosting[]
+  payrollComponentDefinitions PayrollComponentDefinition[]
+  payrollItemComponentLines   PayrollItemComponentLine[]
+  payrollItemAdjustments      PayrollItemAdjustment[]
+  leaveApprovalHistory        LeaveApprovalHistory[]
+  salaryRecords               SalaryRecord[]
+  payrollPeriods              PayrollPeriod[]
+  payrollItems                PayrollItem[]
+  payrollPayments             PayrollPayment[]
+  tasks                       Task[]
+  taskAssignments             TaskAssignment[]
+  taskComments                TaskComment[]
+  chatConversations           ChatConversation[]
+  chatParticipants            ChatParticipant[]
+  chatMessages                ChatMessage[]
+  chatPinnedMessages          ChatPinnedMessage[]
+  vendors                     Vendor[]
+  purchaseRequests            PurchaseRequest[]
+  purchaseRequestLines        PurchaseRequestLine[]
+  purchaseOrders              PurchaseOrder[]
+  purchaseOrderLines          PurchaseOrderLine[]
+  trainingCourses             TrainingCourse[]
+  trainingResources           TrainingResource[]
+  trainingAssignments         TrainingAssignment[]
+  trainingCertificates        TrainingCertificate[]
+  trainingEvaluations         TrainingEvaluation[]
+  loginIdentities             LoginIdentity[]
+  ownerships                  CompanyOwnership[]
+  ownershipTransfers          OwnershipTransfer[]
+  departmentManagers          DepartmentManager[]
+  accessGrants                AccessGrant[]
+  temporaryDelegations        TemporaryDelegation[]
+  attachments                 Attachment[]
+  delegationCapabilities      DelegationCapability[]
+  permissionChangeBatches     PermissionChangeBatch[]
+  permissionChangeHistory     PermissionChangeHistory[]
+  notificationPreferences     NotificationPreference[]
+  attendanceExemptions        AttendanceExemption[]
+  attendanceCorrections       AttendanceCorrection[]
+  attendanceCorrectionHistory AttendanceCorrectionHistory[]
+  purchaseWorkflowEvents      PurchaseWorkflowEvent[]
+  supplierQuotations          SupplierQuotation[]
+  supplierQuotationLines      SupplierQuotationLine[]
+  purchaseReceipts            PurchaseReceipt[]
+  purchaseReceiptLines        PurchaseReceiptLine[]
+  purchaseReturns             PurchaseReturn[]
+  purchaseReturnLines         PurchaseReturnLine[]
+  savedReportTemplates              SavedReportTemplate[]
+  platformAuditLogs                 PlatformAuditLog[]
+  platformIdempotencyKeys           PlatformIdempotencyKey[]
+  credentialRecoveryRequests        CredentialRecoveryRequest[]
+  credentialRecoveryAuditEvents     CredentialRecoveryAuditEvent[]
+}
+
+model PlatformPrincipal {
+  id                   String    @id @default(uuid())
+  email                String
+  normalizedEmail      String    @unique(map: "PlatformPrincipal_normalizedEmail_key")
+  password             String
+  name                 String
+  status               String    @default("active")
+  permissions          String    @default("[]")
+  authorizationVersion Int       @default(1)
+  credentialVersion    Int       @default(1)
+  createdAt            DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime  @updatedAt @db.Timestamptz(3)
+
+  refreshTokens                PlatformRefreshToken[]
+  mfaCredential                PlatformMfaCredential?
+  auditLogs                    PlatformAuditLog[]
+  idempotencyKeys              PlatformIdempotencyKey[]
+  ownershipsCreated            CompanyOwnership[]     @relation("CompanyOwnershipPlatformCreator")
+  attendanceExemptionsCreated  AttendanceExemption[]  @relation("ExemptionPlatformCreator")
+
+  @@index([status], map: "idx_PlatformPrincipal_status")
+}
+
+model PlatformRefreshToken {
+  id                String    @id @default(uuid())
+  sessionId         String    @unique
+  principalId       String
+  tokenHash         String    @unique
+  expiresAt         DateTime  @db.Timestamptz(3)
+  revokedAt         DateTime? @db.Timestamptz(3)
+  revokedReason     String?
+  credentialVersion Int
+  mfaVerifiedAt     DateTime  @db.Timestamptz(3)
+  createdAt         DateTime  @default(now()) @db.Timestamptz(3)
+
+  principal PlatformPrincipal @relation(fields: [principalId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([principalId, revokedAt], map: "idx_PlatformRefreshToken_principal_revoked")
+}
+
+model PlatformMfaCredential {
+  principalId             String    @id
+  state                   String    @default("pending")
+  secretCiphertext        String?
+  pendingSecretCiphertext String?
+  challengeTokenHash      String?   @unique
+  challengePurpose        String?
+  challengeExpiresAt      DateTime? @db.Timestamptz(3)
+  challengeAttempts       Int       @default(0)
+  failedAttempts          Int       @default(0)
+  lockedUntil             DateTime? @db.Timestamptz(3)
+  backupCodeHashes        String    @default("[]")
+  enrolledAt              DateTime? @db.Timestamptz(3)
+  lastVerifiedAt          DateTime? @db.Timestamptz(3)
+  lastUsedTimeStep        BigInt?
+  createdAt               DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt               DateTime  @updatedAt @db.Timestamptz(3)
+
+  principal PlatformPrincipal @relation(fields: [principalId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([challengeExpiresAt], map: "idx_PlatformMfaCredential_challenge_expiry")
+  @@index([lockedUntil], map: "idx_PlatformMfaCredential_locked_until")
+}
+
+model PlatformAuditLog {
+  id              String   @id @default(uuid())
+  principalId     String
+  action          String
+  details         String
+  targetCompanyId String?
+  createdAt       DateTime @default(now()) @db.Timestamptz(3)
+
+  principal   PlatformPrincipal @relation(fields: [principalId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  targetCompany Company?        @relation(fields: [targetCompanyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([principalId, createdAt], map: "idx_PlatformAuditLog_principal_created")
+  @@index([targetCompanyId, createdAt], map: "idx_PlatformAuditLog_company_created")
+}
+
+model PlatformIdempotencyKey {
+  id          String   @id @default(uuid())
+  principalId String
+  key         String
+  requestHash String
+  companyId   String?
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+
+  principal PlatformPrincipal @relation(fields: [principalId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  company   Company?          @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([principalId, key], map: "PlatformIdempotencyKey_principal_key_key")
+  @@index([companyId], map: "idx_PlatformIdempotencyKey_company")
+}
+
+model User {
+  id                         String    @id @default(uuid())
+  companyId                  String
+  employeeId                 String?   @unique
+  email                      String
+  normalizedEmail            String
+  password                   String
+  name                       String
+  roleId                     String
+  authorizationVersion       Int       @default(1)
+  accountStatus              String    @default("active") // active, disabled, archived
+  mustChangePassword         Boolean   @default(false)
+  temporaryPasswordExpiresAt DateTime? @db.Timestamptz(3)
+  passwordChangedAt          DateTime? @db.Timestamptz(3)
+  credentialVersion          Int       @default(1)
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
+
+  company  Company   @relation(fields: [companyId], references: [id])
+  employee Employee? @relation(fields: [employeeId], references: [id])
+  role     Role      @relation(fields: [roleId], references: [id])
+
+  managedDepartments                 Department[]                  @relation("LegacyDepartmentManager")
+  notifications                      Notification[]
+  auditLogs                          AuditLog[]
+  leaveApprovalHistory               LeaveApprovalHistory[]
+  refreshTokens                      RefreshToken[]
+  mfaCredential                     UserMfaCredential?
+  salaryRecordsCreated               SalaryRecord[]                @relation("SalaryRecordCreator")
+  payrollPeriodsCreated              PayrollPeriod[]               @relation("PayrollPeriodCreator")
+  payrollPeriodsCalculated           PayrollPeriod[]               @relation("PayrollPeriodCalculator")
+  payrollPeriodsApproved             PayrollPeriod[]               @relation("PayrollPeriodApprover")
+  payrollPeriodsPaid                 PayrollPeriod[]               @relation("PayrollPeriodPayer")
+  payrollPeriodsReopened             PayrollPeriod[]               @relation("PayrollPeriodReopener")
+  payrollPaymentsRecorded            PayrollPayment[]              @relation("PayrollPaymentRecorder")
+  payrollPaymentsVoided              PayrollPayment[]              @relation("PayrollPaymentVoider")
+  chartOfAccountsArchived            ChartOfAccount[]              @relation("ChartOfAccountArchiver")
+  costCentersArchived                CostCenter[]                  @relation("CostCenterArchiver")
+  journalEntriesCreated              JournalEntry[]                @relation("JournalEntryCreator")
+  journalEntriesPosted               JournalEntry[]                @relation("JournalEntryPoster")
+  journalEntriesReversed             JournalEntry[]                @relation("JournalEntryReverser")
+  payrollLedgerPostingsPosted        PayrollLedgerPosting[]        @relation("PayrollLedgerPostingPoster")
+  payrollComponentDefinitionsCreated PayrollComponentDefinition[]  @relation("PayrollComponentDefinitionCreator")
+  payrollComponentDefinitionsArchived PayrollComponentDefinition[] @relation("PayrollComponentDefinitionArchiver")
+  payrollItemAdjustmentsCreated      PayrollItemAdjustment[]       @relation("PayrollItemAdjustmentCreator")
+  tasksCreated                       Task[]                        @relation("TaskCreator")
+  taskAssignmentsReviewed            TaskAssignment[]              @relation("TaskAssignmentReviewer")
+  taskCommentsAuthored               TaskComment[]                 @relation("TaskCommentAuthor")
+  chatConversationsCreated           ChatConversation[]            @relation("ChatConversationCreator")
+  chatParticipants                   ChatParticipant[]
+  chatMessagesSent                   ChatMessage[]                 @relation("ChatMessageSender")
+  chatPinnedMessages                 ChatPinnedMessage[]           @relation("ChatPinnedMessagePinner")
+  attachmentsUploaded                Attachment[]                  @relation("AttachmentUploader")
+  vendorsCreated                     Vendor[]                      @relation("VendorCreator")
+  purchaseRequestsDeptReviewed       PurchaseRequest[]             @relation("PurchaseRequestDepartmentReviewer")
+  purchaseRequestsPurchasingReviewed PurchaseRequest[]             @relation("PurchaseRequestPurchasingReviewer")
+  purchaseRequestsCancelled          PurchaseRequest[]             @relation("PurchaseRequestCanceller")
+  purchaseOrdersCreated              PurchaseOrder[]               @relation("PurchaseOrderCreator")
+  purchaseOrdersIssued               PurchaseOrder[]               @relation("PurchaseOrderIssuer")
+  purchaseOrdersReceived             PurchaseOrder[]               @relation("PurchaseOrderReceiver")
+  purchaseOrdersCancelled            PurchaseOrder[]               @relation("PurchaseOrderCanceller")
+  trainingCoursesCreated             TrainingCourse[]              @relation("TrainingCourseCreator")
+  trainingCoursesPublished           TrainingCourse[]              @relation("TrainingCoursePublisher")
+  trainingCoursesCompleted           TrainingCourse[]              @relation("TrainingCourseCompleter")
+  trainingCoursesCancelled           TrainingCourse[]              @relation("TrainingCourseCanceller")
+  trainingCoursesArchived            TrainingCourse[]              @relation("TrainingCourseArchiver")
+  trainingAssignmentsAssigned        TrainingAssignment[]          @relation("TrainingAssignmentAssigner")
+  trainingAssignmentsReviewed        TrainingAssignment[]          @relation("TrainingAssignmentReviewer")
+  trainingAssignmentsCancelled       TrainingAssignment[]          @relation("TrainingAssignmentCanceller")
+  trainingCertificatesIssued         TrainingCertificate[]         @relation("TrainingCertificateIssuer")
+  trainingEvaluationsMade            TrainingEvaluation[]          @relation("TrainingEvaluationEvaluator")
+  loginIdentities                    LoginIdentity[]
+  ownerships                         CompanyOwnership[]            @relation("CompanyOwnershipUser")
+  ownershipsCreated                  CompanyOwnership[]            @relation("CompanyOwnershipCreator")
+  ownershipsEnded                    CompanyOwnership[]            @relation("CompanyOwnershipEnder")
+  ownershipTransfersFrom             OwnershipTransfer[]           @relation("OwnershipTransferFrom")
+  ownershipTransfersTo               OwnershipTransfer[]           @relation("OwnershipTransferTo")
+  ownershipTransfersPerformed        OwnershipTransfer[]           @relation("OwnershipTransferActor")
+  departmentManagerMemberships       DepartmentManager[]           @relation("DepartmentManagerUser")
+  departmentManagerAssignmentsMade   DepartmentManager[]           @relation("DepartmentManagerAssigner")
+  departmentManagerAssignmentsEnded  DepartmentManager[]           @relation("DepartmentManagerEnder")
+  accessGrantsReceived               AccessGrant[]                 @relation("AccessGrantRecipient")
+  accessGrantsCreated                AccessGrant[]                 @relation("AccessGrantGrantor")
+  accessGrantsRevoked                AccessGrant[]                 @relation("AccessGrantRevoker")
+  delegationsGiven                   TemporaryDelegation[]         @relation("DelegationDelegator")
+  delegationsReceived                TemporaryDelegation[]         @relation("DelegationRecipient")
+  delegationsRevoked                 TemporaryDelegation[]         @relation("DelegationRevoker")
+  permissionChangeBatchesTargeted    PermissionChangeBatch[]       @relation("PermissionBatchTarget")
+  permissionChangeBatchesPerformed   PermissionChangeBatch[]       @relation("PermissionBatchActor")
+  permissionChangesTargeted          PermissionChangeHistory[]     @relation("PermissionHistoryTarget")
+  permissionChangesPerformed         PermissionChangeHistory[]     @relation("PermissionHistoryActor")
+  notificationPreferences            NotificationPreference[]
+  attendanceExemptions               AttendanceExemption[]         @relation("ExemptionUser")
+  attendanceExemptionsCreated        AttendanceExemption[]         @relation("ExemptionCreator")
+  attendanceExemptionsRevoked        AttendanceExemption[]         @relation("ExemptionRevoker")
+  attendanceCorrectionsRequested     AttendanceCorrection[]        @relation("CorrectionRequester")
+  attendanceCorrectionsReviewed      AttendanceCorrection[]        @relation("CorrectionReviewer")
+  attendanceCorrectionHistoryActions AttendanceCorrectionHistory[] @relation("CorrectionHistoryActor")
+  leaveRequestsSubmitted             LeaveRequest[]                @relation("LeaveSubmitter")
+  employeesArchived                  Employee[]                    @relation("EmployeeArchiver")
+  vendorsArchived                    Vendor[]                      @relation("VendorArchiver")
+  purchaseWorkflowEvents             PurchaseWorkflowEvent[]       @relation("PurchaseWorkflowEventActor")
+  supplierQuotationsCreated          SupplierQuotation[]           @relation("SupplierQuotationCreator")
+  supplierQuotationsSelected         SupplierQuotation[]           @relation("SupplierQuotationSelector")
+  supplierQuotationsRejected         SupplierQuotation[]           @relation("SupplierQuotationRejecter")
+  purchaseReceiptsRecorded           PurchaseReceipt[]             @relation("PurchaseReceiptRecorder")
+  purchaseReturnsCreated             PurchaseReturn[]              @relation("PurchaseReturnCreator")
+  purchaseReturnsReviewed            PurchaseReturn[]              @relation("PurchaseReturnReviewer")
+  savedReportTemplates               SavedReportTemplate[]         @relation("SavedReportTemplateOwner")
+
+  @@unique([id, companyId])
+  @@unique([companyId, normalizedEmail], map: "User_companyId_normalizedEmail_key")
+  @@index([companyId], map: "idx_User_companyId")
+  @@index([roleId], map: "idx_User_roleId")
+  @@index([companyId, accountStatus], map: "idx_User_company_accountStatus")
+}
+
+// Refresh tokens are stored ONLY as a SHA-256 hash — never plaintext.
+// Rotation: each successful /api/auth/refresh revokes the used token and
+// issues a new one. Logout revokes the presented token.
+// sessionId is the public session identifier shown in session lists (never the raw token).
+model RefreshToken {
+  id                String    @id @default(uuid())
+  sessionId         String    @unique
+  userId            String
+  companyId         String
+  tokenHash         String    @unique
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  createdAt         DateTime  @default(now())
+  deviceLabel       String?
+  platform          String?
+  lastUsedAt        DateTime? @db.Timestamptz(3)
+  bindingHash       String?
+  credentialVersion Int       @default(1)
+  revokedReason     String?
+
+  user User @relation(fields: [userId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([companyId, userId, revokedAt], map: "idx_RefreshToken_company_user_revoked")
+  @@index([userId, lastUsedAt], map: "idx_RefreshToken_user_lastUsedAt")
+}
+
+model UserMfaCredential {
+  userId                  String    @id
+  companyId               String
+  state                   String    @default("pending") // pending, enrolled
+  secretCiphertext        String?
+  pendingSecretCiphertext String?
+  challengeTokenHash      String?   @unique
+  challengePurpose        String?
+  challengeExpiresAt      DateTime? @db.Timestamptz(3)
+  challengeAttempts       Int       @default(0)
+  failedAttempts          Int       @default(0)
+  lockedUntil             DateTime? @db.Timestamptz(3)
+  backupCodeHashes        String    @default("[]")
+  enrolledAt              DateTime? @db.Timestamptz(3)
+  lastVerifiedAt          DateTime? @db.Timestamptz(3)
+  lastUsedTimeStep        BigInt?
+  createdAt               DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt               DateTime  @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([userId, companyId])
+  @@index([companyId, state], map: "idx_UserMfaCredential_company_state")
+  @@index([challengeExpiresAt], map: "idx_UserMfaCredential_challenge_expiry")
+  @@index([lockedUntil], map: "idx_UserMfaCredential_locked_until")
+}
+
+model Employee {
+  id                    String    @id @default(uuid())
+  companyId             String
+  employeeNum           String
+  normalizedEmployeeNum String
+  jobTitle              String
+  joiningDate           DateTime
+  status                String    @default("active") // active, inactive, terminated
+  contactInfo           String?
+  departmentId          String?
+  archivedAt            DateTime? @db.Timestamptz(3)
+  archivedByUserId      String?
+  archiveReason         String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  company               Company                @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  user                  User?
+  archivedBy            User?                  @relation("EmployeeArchiver", fields: [archivedByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  department            Department?            @relation(fields: [departmentId], references: [id])
+  attendances           Attendance[]
+  leaveRequests         LeaveRequest[]         @relation("Requester")
+  leavesApproved        LeaveRequest[]         @relation("Approver")
+  salaryRecords         SalaryRecord[]
+  payrollItems          PayrollItem[]
+  payrollComponentLines PayrollItemComponentLine[]
+  payrollAdjustments    PayrollItemAdjustment[]
+  taskAssignments       TaskAssignment[]
+  purchaseRequests      PurchaseRequest[]
+  trainingAssignments   TrainingAssignment[]
+  trainingCertificates  TrainingCertificate[]
+  trainingEvaluations   TrainingEvaluation[]
+  attendanceExemptions  AttendanceExemption[]
+  attendanceCorrections AttendanceCorrection[]
+
+  @@unique([id, companyId])
+  @@unique([companyId, normalizedEmployeeNum], map: "Employee_companyId_normalizedEmployeeNum_key")
+  @@index([companyId], map: "idx_Employee_companyId")
+  @@index([departmentId], map: "idx_Employee_departmentId")
+  @@index([companyId, archivedAt], map: "idx_Employee_company_archivedAt")
+}
+
+model LoginIdentity {
+  id                   String   @id @default(uuid())
+  companyId            String
+  userId               String
+  type                 String
+  normalizedIdentifier String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  user    User    @relation(fields: [userId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([companyId, normalizedIdentifier], map: "LoginIdentity_companyId_normalizedIdentifier_key")
+  @@unique([companyId, type, normalizedIdentifier], map: "LoginIdentity_companyId_type_normalizedIdentifier_key")
+  @@unique([companyId, userId, type], map: "LoginIdentity_companyId_userId_type_key")
+  @@index([userId, companyId], map: "idx_LoginIdentity_userId_companyId")
+}
+
+model Department {
+  id        String   @id @default(uuid())
+  companyId String
+  name      String
+  managerId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company                 Company                   @relation(fields: [companyId], references: [id])
+  manager                 User?                     @relation("LegacyDepartmentManager", fields: [managerId], references: [id])
+  employees               Employee[]
+  chatConversations       ChatConversation[]
+  purchaseRequests        PurchaseRequest[]
+  managerMemberships      DepartmentManager[]
+  accessGrants            AccessGrant[]
+  temporaryDelegations    TemporaryDelegation[]
+  permissionChangeHistory PermissionChangeHistory[]
+
+  @@unique([id, companyId])
+}
+
+model CompanyOwnership {
+  id                     String    @id @default(uuid())
+  companyId              String
+  activePrimaryCompanyId String?   @unique(map: "CompanyOwnership_one_active_primary_key")
+  userId                 String
+  isPrimary              Boolean   @default(true)
+  status                 String    @default("active")
+  effectiveAt            DateTime  @default(now()) @db.Timestamptz(3)
+  endedAt                DateTime? @db.Timestamptz(3)
+  createdByUserId        String?
+  createdByPlatformPrincipalId String?
+  endedByUserId          String?
+
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  user      User    @relation("CompanyOwnershipUser", fields: [userId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  createdBy User?   @relation("CompanyOwnershipCreator", fields: [createdByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  createdByPlatform PlatformPrincipal? @relation("CompanyOwnershipPlatformCreator", fields: [createdByPlatformPrincipalId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  endedBy   User?   @relation("CompanyOwnershipEnder", fields: [endedByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([id, companyId])
+  @@index([companyId, status, isPrimary], map: "idx_CompanyOwnership_company_status_primary")
+  @@index([userId, companyId], map: "idx_CompanyOwnership_user_company")
+  @@index([createdByUserId, companyId], map: "idx_CompanyOwnership_creator_company")
+  @@index([createdByPlatformPrincipalId], map: "idx_CompanyOwnership_platform_creator")
+  @@index([endedByUserId, companyId], map: "idx_CompanyOwnership_ender_company")
+}
+
+model OwnershipTransfer {
+  id                  String   @id @default(uuid())
+  companyId           String
+  fromUserId          String
+  toUserId            String
+  reason              String
+  transferredByUserId String
+  idempotencyKey      String
+  previewDigest       String
+  createdAt           DateTime @default(now()) @db.Timestamptz(3)
+
+  company       Company @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  fromUser      User    @relation("OwnershipTransferFrom", fields: [fromUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  toUser        User    @relation("OwnershipTransferTo", fields: [toUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  transferredBy User    @relation("OwnershipTransferActor", fields: [transferredByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([companyId, transferredByUserId, idempotencyKey], map: "OwnershipTransfer_actor_idempotency_key")
+  @@index([companyId, createdAt], map: "idx_OwnershipTransfer_company_created")
+  @@index([fromUserId, companyId], map: "idx_OwnershipTransfer_from_company")
+  @@index([toUserId, companyId], map: "idx_OwnershipTransfer_to_company")
+}
+
+model DepartmentManager {
+  id               String    @id @default(uuid())
+  companyId        String
+  departmentId     String
+  userId           String
+  status           String    @default("active")
+  assignedByUserId String
+  assignedAt       DateTime  @default(now()) @db.Timestamptz(3)
+  endedAt          DateTime? @db.Timestamptz(3)
+  endedByUserId    String?
+
+  company    Company    @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  department Department @relation(fields: [departmentId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  user       User       @relation("DepartmentManagerUser", fields: [userId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  assignedBy User       @relation("DepartmentManagerAssigner", fields: [assignedByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  endedBy    User?      @relation("DepartmentManagerEnder", fields: [endedByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([id, companyId])
+  @@index([companyId, departmentId, status], map: "idx_DepartmentManager_company_department_status")
+  @@index([companyId, userId, status], map: "idx_DepartmentManager_company_user_status")
+  @@index([assignedByUserId, companyId], map: "idx_DepartmentManager_assigner_company")
+  @@index([endedByUserId, companyId], map: "idx_DepartmentManager_ender_company")
+}
+
+model AccessGrant {
+  id              String    @id @default(uuid())
+  companyId       String
+  recipientUserId String
+  capability      String
+  scopeType       String
+  departmentId    String?
+  grantedByUserId String
+  reason          String
+  grantKind       String    @default("direct")
+  status          String    @default("active")
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
+  revokedAt       DateTime? @db.Timestamptz(3)
+  revokedByUserId String?
+
+  company    Company     @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  recipient  User        @relation("AccessGrantRecipient", fields: [recipientUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  grantedBy  User        @relation("AccessGrantGrantor", fields: [grantedByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  revokedBy  User?       @relation("AccessGrantRevoker", fields: [revokedByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  department Department? @relation(fields: [departmentId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([id, companyId])
+  @@index([companyId, recipientUserId, status], map: "idx_AccessGrant_company_recipient_status")
+  @@index([companyId, capability, scopeType, status], map: "idx_AccessGrant_company_capability_scope_status")
+  @@index([departmentId, companyId], map: "idx_AccessGrant_department_company")
+  @@index([grantedByUserId, companyId], map: "idx_AccessGrant_grantor_company")
+  @@index([revokedByUserId, companyId], map: "idx_AccessGrant_revoker_company")
+}
+
+model TemporaryDelegation {
+  id              String    @id @default(uuid())
+  companyId       String
+  delegatorUserId String
+  recipientUserId String
+  scopeType       String
+  departmentId    String?
+  validFrom       DateTime  @db.Timestamptz(3)
+  validUntil      DateTime  @db.Timestamptz(3)
+  reason          String
+  idempotencyKey  String
+  status          String    @default("active")
+  revokedAt       DateTime? @db.Timestamptz(3)
+  revokedByUserId String?
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
+
+  company      Company                @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  delegator    User                   @relation("DelegationDelegator", fields: [delegatorUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  recipient    User                   @relation("DelegationRecipient", fields: [recipientUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  revokedBy    User?                  @relation("DelegationRevoker", fields: [revokedByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  department   Department?            @relation(fields: [departmentId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  capabilities DelegationCapability[]
+
+  @@unique([id, companyId])
+  @@unique([companyId, delegatorUserId, idempotencyKey], map: "TemporaryDelegation_delegator_idempotency_key")
+  @@index([companyId, recipientUserId, status, validFrom, validUntil], map: "idx_TemporaryDelegation_recipient_effective")
+  @@index([companyId, delegatorUserId, status], map: "idx_TemporaryDelegation_delegator_status")
+  @@index([departmentId, companyId], map: "idx_TemporaryDelegation_department_company")
+  @@index([revokedByUserId, companyId], map: "idx_TemporaryDelegation_revoker_company")
+}
+
+model DelegationCapability {
+  id           String @id @default(uuid())
+  companyId    String
+  delegationId String
+  capability   String
+
+  company    Company             @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  delegation TemporaryDelegation @relation(fields: [delegationId, companyId], references: [id, companyId], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([id, companyId])
+  @@unique([delegationId, capability], map: "DelegationCapability_delegation_capability_key")
+  @@index([companyId, capability], map: "idx_DelegationCapability_company_capability")
+}
+
+model PermissionChangeBatch {
+  id                            String   @id @default(uuid())
+  companyId                     String
+  targetUserId                  String
+  actorUserId                   String
+  idempotencyKey                String
+  previewDigest                 String
+  expectedAuthorizationVersion  Int
+  resultingAuthorizationVersion Int
+  reason                        String
+  createdAt                     DateTime @default(now()) @db.Timestamptz(3)
+
+  company Company                   @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  target  User                      @relation("PermissionBatchTarget", fields: [targetUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  actor   User                      @relation("PermissionBatchActor", fields: [actorUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  history PermissionChangeHistory[]
+
+  @@unique([id, companyId])
+  @@unique([companyId, actorUserId, idempotencyKey], map: "PermissionChangeBatch_actor_idempotency_key")
+  @@index([companyId, targetUserId, createdAt], map: "idx_PermissionChangeBatch_target_created")
+}
+
+model PermissionChangeHistory {
+  id           String   @id @default(uuid())
+  companyId    String
+  batchId      String
+  targetUserId String
+  actorUserId  String
+  action       String
+  capability   String
+  scopeType    String
+  departmentId String?
+  reason       String
+  beforeJson   String
+  afterJson    String
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+
+  company    Company               @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  batch      PermissionChangeBatch @relation(fields: [batchId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  target     User                  @relation("PermissionHistoryTarget", fields: [targetUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  actor      User                  @relation("PermissionHistoryActor", fields: [actorUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  department Department?           @relation(fields: [departmentId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([id, companyId])
+  @@index([batchId, companyId], map: "idx_PermissionChangeHistory_batch_company")
+  @@index([companyId, targetUserId, createdAt], map: "idx_PermissionChangeHistory_target_created")
+  @@index([companyId, actorUserId, createdAt], map: "idx_PermissionChangeHistory_actor_created")
+  @@index([departmentId, companyId], map: "idx_PermissionChangeHistory_department_company")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String // e.g. "Admin", "HR Manager", "Department Manager", "Employee"
+  permissions String // Stored as JSON string of permissions array
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  users   User[]
+
+  // Role_companyId_lower_name_key is baseline-managed SQL because Prisma cannot model lower(name).
+}
+
+model LeaveRequest {
+  id         String   @id @default(uuid())
+  companyId  String
+  employeeId String
+  leaveType  String // annual, sick, special, unpaid
+  startDate  DateTime
+  endDate    DateTime
+  totalDays  Int
+  reason     String?
+  status     String   @default("pending_hr") // pending_hr, pending_admin, approved, rejected, cancelled
+
+  // Annual leave specific
+  exitReentryRequested Boolean @default(false)
+  visaFeePaid          Boolean @default(false)
+
+  // Tracking
+  hrReviewerId      String?
+  adminApproverId   String?
+  rejectionReason   String?
+  submittedByUserId String?
+  submissionMode    String   @default("self") // self, on_behalf
+  submissionReason  String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  company         Company                @relation(fields: [companyId], references: [id])
+  employee        Employee               @relation("Requester", fields: [employeeId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  hrReviewer      Employee?              @relation("Approver", fields: [hrReviewerId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  submittedBy     User?                  @relation("LeaveSubmitter", fields: [submittedByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  approvalHistory LeaveApprovalHistory[]
+
+  @@unique([id, companyId])
+  @@index([companyId, status, createdAt])
+  @@index([companyId, employeeId, createdAt])
+  @@index([companyId, submittedByUserId, createdAt], map: "idx_LeaveRequest_company_submitter_created")
+}
+
+model LeaveApprovalHistory {
+  id                String   @id @default(uuid())
+  companyId         String
+  leaveRequestId    String
+  actionByUserId    String
+  action            String // hr_approve, hr_reject, escalate, admin_approve, admin_reject
+  reason            String?
+  fromStatus        String?
+  toStatus          String?
+  isOverride        Boolean  @default(false)
+  actorRoleSnapshot String?
+  reasonCategory    String?
+  createdAt         DateTime @default(now())
+
+  company      Company      @relation(fields: [companyId], references: [id])
+  leaveRequest LeaveRequest @relation(fields: [leaveRequestId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  actionByUser User         @relation(fields: [actionByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([leaveRequestId, companyId, createdAt], map: "idx_LeaveApprovalHistory_request_created")
+  @@index([companyId, action, fromStatus, toStatus], map: "idx_LeaveApprovalHistory_action_states")
+}
+
+model Attendance {
+  id         String    @id @default(uuid())
+  companyId  String
+  employeeId String
+  date       DateTime
+  clockIn    DateTime?
+  clockOut   DateTime?
+  status     String    @default("present") // present, absent, late
+  version    Int       @default(1)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  company     Company                @relation(fields: [companyId], references: [id])
+  employee    Employee               @relation(fields: [employeeId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  corrections AttendanceCorrection[]
+
+  @@unique([id, companyId])
+  @@index([companyId, date])
+  @@index([companyId, employeeId, date])
+}
+
+model AttendanceExemption {
+  id              String    @id @default(uuid())
+  companyId       String
+  userId          String
+  employeeId      String?
+  validFrom       DateTime  @db.Timestamptz(3)
+  validUntil      DateTime? @db.Timestamptz(3)
+  reasonCategory  String
+  note            String?
+  status          String    @default("active")
+  createdByUserId String?
+  createdByPlatformPrincipalId String?
+  revokedByUserId String?
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
+  revokedAt       DateTime? @db.Timestamptz(3)
+  version         Int       @default(1)
+
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  user      User      @relation("ExemptionUser", fields: [userId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  employee  Employee? @relation(fields: [employeeId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  createdBy User?     @relation("ExemptionCreator", fields: [createdByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  createdByPlatform PlatformPrincipal? @relation("ExemptionPlatformCreator", fields: [createdByPlatformPrincipalId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  revokedBy User?     @relation("ExemptionRevoker", fields: [revokedByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([id, companyId])
+  @@index([companyId, userId, status, validFrom, validUntil], map: "idx_AttendanceExemption_user_effective")
+  @@index([createdByUserId, companyId], map: "idx_AttendanceExemption_creator_company")
+  @@index([createdByPlatformPrincipalId], map: "idx_AttendanceExemption_platform_creator")
+  @@index([revokedByUserId, companyId], map: "idx_AttendanceExemption_revoker_company")
+  @@index([employeeId, companyId], map: "idx_AttendanceExemption_employee_company")
+}
+
+model AttendanceCorrection {
+  id                String    @id @default(uuid())
+  companyId         String
+  attendanceId      String
+  employeeId        String
+  requestedByUserId String
+  requestedClockIn  DateTime?
+  requestedClockOut DateTime?
+  reason            String
+  status            String    @default("pending")
+  reviewedByUserId  String?
+  reviewedAt        DateTime?
+  decisionReason    String?
+  version           Int       @default(1)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  company     Company                       @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  attendance  Attendance                    @relation(fields: [attendanceId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  employee    Employee                      @relation(fields: [employeeId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  requestedBy User                          @relation("CorrectionRequester", fields: [requestedByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  reviewedBy  User?                         @relation("CorrectionReviewer", fields: [reviewedByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  history     AttendanceCorrectionHistory[]
+
+  @@unique([id, companyId])
+  @@index([companyId, attendanceId, status], map: "idx_AttendanceCorrection_attendance_status")
+  @@index([companyId, employeeId, status, createdAt], map: "idx_AttendanceCorrection_employee_status_created")
+  @@index([requestedByUserId, companyId], map: "idx_AttendanceCorrection_requester_company")
+  @@index([reviewedByUserId, companyId], map: "idx_AttendanceCorrection_reviewer_company")
+}
+
+model AttendanceCorrectionHistory {
+  id           String   @id @default(uuid())
+  companyId    String
+  correctionId String
+  actorUserId  String
+  action       String
+  fromStatus   String
+  toStatus     String
+  safeReason   String?
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+
+  company    Company              @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  correction AttendanceCorrection @relation(fields: [correctionId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  actor      User                 @relation("CorrectionHistoryActor", fields: [actorUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([id, companyId])
+  @@index([correctionId, companyId, createdAt], map: "idx_AttendanceCorrectionHistory_correction_created")
+  @@index([companyId, actorUserId, createdAt], map: "idx_AttendanceCorrectionHistory_actor_created")
+}
+
+model Notification {
+  id           String    @id @default(uuid())
+  companyId    String
+  userId       String
+  title        String
+  message      String
+  category     String    @default("general")
+  routeKey     String?
+  resourceType String?
+  resourceId   String?
+  filterJson   String?
+  isRead       Boolean   @default(false)
+  readAt       DateTime?
+  hiddenAt     DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@index([userId, isRead, createdAt])
+  @@index([userId, hiddenAt, createdAt])
+  @@index([userId, category, createdAt])
+}
+
+/// Own-inbox category preferences. Mandatory security notices cannot be disabled in API policy.
+model NotificationPreference {
+  id           String   @id @default(uuid())
+  companyId    String
+  userId       String
+  category     String
+  inAppEnabled Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([companyId, userId, category])
+  @@index([userId, category])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  companyId String
+  userId    String
+  action    String
+  details   String // Store JSON string of changes
+  createdAt DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@index([companyId, createdAt])
+  @@index([companyId, action, createdAt])
+}
+
+// Finance foundation (Commercial W1A)
+model ChartOfAccount {
+  id               String    @id @default(uuid())
+  companyId        String
+  code             String
+  name             String
+  type             String // Asset, Liability, Equity, Revenue, Expense
+  parentId         String?
+  status           String    @default("active") // active, archived
+  archivedAt       DateTime? @db.Timestamptz(3)
+  archivedByUserId String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  company      Company            @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  parent       ChartOfAccount?    @relation("ChartOfAccountHierarchy", fields: [parentId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  children     ChartOfAccount[]   @relation("ChartOfAccountHierarchy")
+  archivedBy   User?              @relation("ChartOfAccountArchiver", fields: [archivedByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  journalLines JournalEntryLine[]
+
+  @@unique([companyId, code])
+  @@unique([id, companyId])
+  @@index([companyId, status])
+  @@index([companyId, parentId])
+  @@index([companyId, type])
+}
+
+model CostCenter {
+  id               String    @id @default(uuid())
+  companyId        String
+  code             String
+  name             String
+  description      String?
+  status           String    @default("active") // active, archived
+  archivedAt       DateTime? @db.Timestamptz(3)
+  archivedByUserId String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  company      Company            @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  archivedBy   User?              @relation("CostCenterArchiver", fields: [archivedByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  journalLines JournalEntryLine[]
+
+  @@unique([companyId, code])
+  @@unique([id, companyId])
+  @@index([companyId, status])
+}
+
+model JournalEntry {
+  id                       String    @id @default(uuid())
+  companyId                String
+  status                   String    @default("draft") // draft, posted, reversed
+  entryDate                DateTime  @db.Date
+  reference                String?
+  memo                     String?
+  currency                 String    @default("SAR") @db.Char(3)
+  totalDebit               Decimal   @db.Decimal(18, 2)
+  totalCredit              Decimal   @db.Decimal(18, 2)
+  postedAt                 DateTime? @db.Timestamptz(3)
+  postedByUserId           String?
+  reversedAt               DateTime? @db.Timestamptz(3)
+  reversedByUserId         String?
+  reversesJournalEntryId   String?
+  idempotencyKey           String?
+  sourceType               String? // manual, payroll
+  sourcePayrollPeriodId    String?
+  sourceCalculationVersion Int?
+  createdByUserId          String
+  createdAt                DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt                DateTime  @updatedAt @db.Timestamptz(3)
+
+  company              Company               @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy            User                  @relation("JournalEntryCreator", fields: [createdByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  postedBy             User?                 @relation("JournalEntryPoster", fields: [postedByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  reversedBy           User?                 @relation("JournalEntryReverser", fields: [reversedByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  reversesJournalEntry JournalEntry?         @relation("JournalEntryReversal", fields: [reversesJournalEntryId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  reversedByEntries    JournalEntry[]        @relation("JournalEntryReversal")
+  sourcePayrollPeriod  PayrollPeriod?        @relation("JournalEntryPayrollSource", fields: [sourcePayrollPeriodId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  lines                JournalEntryLine[]
+  payrollLedgerPosting PayrollLedgerPosting?
+
+  @@unique([id, companyId])
+  @@unique([companyId, idempotencyKey])
+  @@index([companyId, status, entryDate])
+  @@index([companyId, sourceType, sourcePayrollPeriodId])
+  @@index([companyId, createdAt])
+}
+
+model JournalEntryLine {
+  id             String  @id @default(uuid())
+  companyId      String
+  journalEntryId String
+  lineNo         Int
+  accountId      String
+  costCenterId   String?
+  debit          Decimal @db.Decimal(18, 2)
+  credit         Decimal @db.Decimal(18, 2)
+  lineMemo       String?
+
+  company      Company        @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  journalEntry JournalEntry   @relation(fields: [journalEntryId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  account      ChartOfAccount @relation(fields: [accountId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  costCenter   CostCenter?    @relation(fields: [costCenterId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([journalEntryId, lineNo])
+  @@unique([id, companyId])
+  @@index([companyId, journalEntryId])
+  @@index([companyId, accountId])
+  @@index([companyId, costCenterId])
+}
+
+model PayrollLedgerPosting {
+  id                 String   @id @default(uuid())
+  companyId          String
+  payrollPeriodId    String
+  calculationVersion Int
+  journalEntryId     String
+  postedByUserId     String
+  postedAt           DateTime @default(now()) @db.Timestamptz(3)
+  idempotencyKey     String
+
+  company       Company       @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  payrollPeriod PayrollPeriod @relation(fields: [payrollPeriodId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  journalEntry  JournalEntry  @relation(fields: [journalEntryId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  postedBy      User          @relation("PayrollLedgerPostingPoster", fields: [postedByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([companyId, payrollPeriodId, calculationVersion])
+  @@unique([companyId, idempotencyKey])
+  @@unique([journalEntryId, companyId])
+  @@unique([id, companyId])
+  @@index([companyId, payrollPeriodId])
+}
+
+model PayrollComponentDefinition {
+  id              String    @id @default(uuid())
+  companyId       String
+  code            String
+  name            String
+  componentType   String // allowance, deduction
+  calcMethod      String // fixed, percentage
+  fixedAmount     Decimal?  @db.Decimal(18, 2)
+  rateBps         Int?
+  percentageBasis String? // base_salary only when percentage
+  version         Int       @default(1)
+  status          String    @default("active") // active, archived
+  currency        String    @default("SAR") @db.Char(3)
+  createdByUserId String
+  archivedAt      DateTime? @db.Timestamptz(3)
+  archivedByUserId String?
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @db.Timestamptz(3)
+
+  company    Company                   @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy  User                      @relation("PayrollComponentDefinitionCreator", fields: [createdByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  archivedBy User?                     @relation("PayrollComponentDefinitionArchiver", fields: [archivedByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  lines      PayrollItemComponentLine[]
+
+  @@unique([companyId, code])
+  @@unique([id, companyId])
+  @@index([companyId, status, componentType])
+}
+
+model PayrollItemComponentLine {
+  id                     String   @id @default(uuid())
+  companyId              String
+  payrollItemId          String
+  payrollPeriodId        String
+  employeeId             String
+  definitionId           String?
+  definitionCode         String
+  definitionVersion      Int
+  componentType          String
+  calcMethod             String
+  percentageBasis        String?
+  rateBps                Int?
+  fixedAmountSnapshot    Decimal? @db.Decimal(18, 2)
+  amount                 Decimal  @db.Decimal(18, 2)
+  currency               String   @default("SAR") @db.Char(3)
+  createdAt              DateTime @default(now()) @db.Timestamptz(3)
+
+  company       Company                     @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  payrollItem   PayrollItem                 @relation(fields: [payrollItemId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  payrollPeriod PayrollPeriod               @relation(fields: [payrollPeriodId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  employee      Employee                    @relation(fields: [employeeId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  definition    PayrollComponentDefinition? @relation(fields: [definitionId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([companyId, payrollItemId])
+  @@index([companyId, payrollPeriodId, employeeId])
+  @@index([companyId, definitionId])
+}
+
+model PayrollItemAdjustment {
+  id              String   @id @default(uuid())
+  companyId       String
+  payrollPeriodId String
+  employeeId      String
+  payrollItemId   String?
+  direction       String // allowance, deduction
+  amount          Decimal  @db.Decimal(18, 2)
+  reason          String
+  createdByUserId String
+  createdAt       DateTime @default(now()) @db.Timestamptz(3)
+  status          String   @default("applied") // applied, superseded
+  /// Client Idempotency-Key for apply; unique per company.
+  idempotencyKey  String
+
+  company       Company       @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  payrollPeriod PayrollPeriod @relation(fields: [payrollPeriodId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  employee      Employee      @relation(fields: [employeeId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  payrollItem   PayrollItem?  @relation(fields: [payrollItemId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  createdBy     User          @relation("PayrollItemAdjustmentCreator", fields: [createdByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([id, companyId])
+  @@unique([companyId, idempotencyKey])
+  @@index([companyId, payrollPeriodId, employeeId, status])
+  @@index([companyId, payrollItemId])
+}
+
+// Minimal Purchasing representation
+model Vendor {
+  id               String    @id @default(uuid())
+  companyId        String
+  name             String
+  contact          String?
+  email            String?
+  taxNumber        String?
+  category         String?
+  status           String    @default("active") // active, inactive, archived
+  lifecycleVersion Int       @default(1)
+  createdByUserId  String?
+  deactivatedAt    DateTime?
+  archivedAt       DateTime? @db.Timestamptz(3)
+  archivedByUserId String?
+  archiveReason    String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  company    Company         @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  createdBy  User?           @relation("VendorCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  archivedBy User?           @relation("VendorArchiver", fields: [archivedByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  orders     PurchaseOrder[]
+  quotations SupplierQuotation[]
+
+  @@unique([id, companyId])
+  @@index([companyId, status, name])
+  @@index([createdByUserId])
+  @@index([companyId, archivedAt], map: "idx_Vendor_company_archivedAt")
+}
+
+model PurchaseWorkflowEvent {
+  id             String   @id @default(uuid())
+  companyId      String
+  entityType     String
+  entityId       String
+  action         String
+  previousStatus String
+  newStatus      String
+  reason         String
+  actorUserId    String
+  idempotencyKey String?
+  /// W2: SHA-256 of the canonical logical request, bound to the idempotency key.
+  /// A same-key retry with a different payload is a 409 instead of a false replay.
+  /// Nullable so pre-W2 events (e.g. admin overrides) remain untouched.
+  payloadFingerprint String?
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  actor   User    @relation("PurchaseWorkflowEventActor", fields: [actorUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([companyId, idempotencyKey], map: "PurchaseWorkflowEvent_companyId_idempotencyKey_key")
+  @@index([companyId, entityType, entityId, createdAt], map: "idx_PurchaseWorkflowEvent_entity")
+  @@index([companyId, actorUserId, createdAt], map: "idx_PurchaseWorkflowEvent_actor")
+}
+
+model PurchaseRequest {
+  id                         String    @id @default(uuid())
+  companyId                  String
+  requestNumber              String
+  requestedByEmployeeId      String
+  requesterNameSnapshot      String
+  requesterNumSnapshot       String
+  departmentId               String?
+  departmentNameSnapshot     String?
+  title                      String
+  justification              String?
+  neededByDate               DateTime? @db.Date
+  status                     String    @default("pending_department")
+  totalEstimated             Decimal   @db.Decimal(18, 2)
+  currency                   String    @default("SAR") @db.Char(3)
+  departmentReviewedByUserId String?
+  departmentReviewedAt       DateTime?
+  departmentReviewNote       String?
+  purchasingReviewedByUserId String?
+  purchasingReviewedAt       DateTime?
+  purchasingReviewNote       String?
+  cancelledByUserId          String?
+  cancelledAt                DateTime?
+  cancellationReason         String?
+  rejectedAt                 DateTime?
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
+
+  company            Company               @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  requester          Employee              @relation(fields: [requestedByEmployeeId, companyId], references: [id, companyId], onDelete: Restrict)
+  department         Department?           @relation(fields: [departmentId, companyId], references: [id, companyId], onDelete: Restrict)
+  departmentReviewer User?                 @relation("PurchaseRequestDepartmentReviewer", fields: [departmentReviewedByUserId, companyId], references: [id, companyId], onDelete: Restrict)
+  purchasingReviewer User?                 @relation("PurchaseRequestPurchasingReviewer", fields: [purchasingReviewedByUserId, companyId], references: [id, companyId], onDelete: Restrict)
+  cancelledBy        User?                 @relation("PurchaseRequestCanceller", fields: [cancelledByUserId, companyId], references: [id, companyId], onDelete: Restrict)
+  lines              PurchaseRequestLine[]
+  orders             PurchaseOrder[]
+  quotations         SupplierQuotation[]
+
+  @@unique([companyId, requestNumber])
+  @@unique([id, companyId])
+  @@index([companyId, status, createdAt])
+  @@index([requestedByEmployeeId, status])
+  @@index([departmentId, status])
+  @@index([neededByDate])
+}
+
+model PurchaseRequestLine {
+  id                 String   @id @default(uuid())
+  companyId          String
+  purchaseRequestId  String
+  description        String
+  category           String?
+  quantity           Decimal  @db.Decimal(18, 3)
+  unit               String
+  estimatedUnitPrice Decimal  @db.Decimal(18, 2)
+  estimatedTotal     Decimal  @db.Decimal(18, 2)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  company         Company             @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  purchaseRequest PurchaseRequest     @relation(fields: [purchaseRequestId, companyId], references: [id, companyId], onDelete: Restrict)
+  orderLines      PurchaseOrderLine[]
+  quotationLines  SupplierQuotationLine[]
+
+  @@unique([id, companyId])
+  @@index([companyId, purchaseRequestId])
+  @@index([purchaseRequestId])
+}
+
+model PurchaseOrder {
+  id                      String    @id @default(uuid())
+  companyId               String
+  orderNumber             String
+  purchaseRequestId       String
+  vendorId                String
+  vendorNameSnapshot      String
+  vendorContactSnapshot   String?
+  vendorEmailSnapshot     String?
+  vendorTaxNumberSnapshot String?
+  status                  String    @default("draft")
+  currency                String    @default("SAR") @db.Char(3)
+  subtotal                Decimal   @db.Decimal(18, 2)
+  totalAmount             Decimal   @db.Decimal(18, 2)
+  /// W2: optional traceability link Purchase Request -> selected Supplier Quotation -> Purchase Order.
+  supplierQuotationId     String?
+  createdByUserId         String
+  issuedByUserId          String?
+  issuedAt                DateTime?
+  receivedByUserId        String?
+  receivedAt              DateTime?
+  receiptNote             String?
+  cancelledByUserId       String?
+  cancelledAt             DateTime?
+  cancellationReason      String?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  company         Company             @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  purchaseRequest PurchaseRequest     @relation(fields: [purchaseRequestId, companyId], references: [id, companyId], onDelete: Restrict)
+  vendor          Vendor              @relation(fields: [vendorId, companyId], references: [id, companyId], onDelete: Restrict)
+  createdBy       User                @relation("PurchaseOrderCreator", fields: [createdByUserId, companyId], references: [id, companyId], onDelete: Restrict)
+  issuedBy        User?               @relation("PurchaseOrderIssuer", fields: [issuedByUserId, companyId], references: [id, companyId], onDelete: Restrict)
+  receivedBy      User?               @relation("PurchaseOrderReceiver", fields: [receivedByUserId, companyId], references: [id, companyId], onDelete: Restrict)
+  cancelledBy       User?               @relation("PurchaseOrderCanceller", fields: [cancelledByUserId, companyId], references: [id, companyId], onDelete: Restrict)
+  supplierQuotation SupplierQuotation?  @relation(fields: [supplierQuotationId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  lines             PurchaseOrderLine[]
+  attachments       Attachment[]
+  receipts          PurchaseReceipt[]
+  returns           PurchaseReturn[]
+
+  @@unique([companyId, orderNumber])
+  @@unique([id, companyId])
+  @@index([companyId, status, createdAt])
+  @@index([vendorId, status])
+  @@index([purchaseRequestId, status])
+  @@index([companyId, supplierQuotationId], map: "idx_PurchaseOrder_company_quotation")
+}
+
+model PurchaseOrderLine {
+  id                  String   @id @default(uuid())
+  companyId           String
+  purchaseOrderId     String
+  requestLineId       String?
+  descriptionSnapshot String
+  categorySnapshot    String?
+  quantity            Decimal  @db.Decimal(18, 3)
+  unitSnapshot        String
+  unitPrice           Decimal  @db.Decimal(18, 2)
+  lineTotal           Decimal  @db.Decimal(18, 2)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  company       Company              @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  purchaseOrder PurchaseOrder        @relation(fields: [purchaseOrderId, companyId], references: [id, companyId], onDelete: Restrict)
+  requestLine   PurchaseRequestLine? @relation(fields: [requestLineId, companyId], references: [id, companyId], onDelete: Restrict)
+  receiptLines  PurchaseReceiptLine[]
+  returnLines   PurchaseReturnLine[]
+
+  @@unique([id, companyId])
+  @@index([companyId, purchaseOrderId])
+  @@index([purchaseOrderId])
+  @@index([requestLineId])
+}
+
+// ---------------------------------------------------------------------------
+// Commercial Wave 2 — Operations Slice E1 (purchasing lifecycle expansion)
+//
+// Design notes that the rest of the code depends on:
+//  * Quantities are DECIMAL(18,3) and are only ever computed with integer
+//    milli-units (BigInt) — never IEEE floats.
+//  * Money is DECIMAL(18,2) and is only ever computed with integer cents.
+//  * Receipts and returns are immutable *events*. "Received to date",
+//    "returned to date", "net received" and "remaining receivable" are always
+//    derived by summing those events inside a transaction that holds the
+//    parent PurchaseOrder row lock. No cumulative column is mutated in place,
+//    so receipt history is never destructively overwritten.
+// ---------------------------------------------------------------------------
+
+/// A supplier's priced offer against a Purchase Request.
+/// `draft`/`submitted` are editable; `selected`/`rejected` are immutable
+/// historical facts kept for comparison history.
+model SupplierQuotation {
+  id                 String    @id @default(uuid())
+  companyId          String
+  quotationNumber    String
+  purchaseRequestId  String
+  vendorId           String
+  vendorNameSnapshot String
+  /// The supplier's own document reference, as supplied by an authorized user.
+  supplierReference  String?
+  status             String    @default("draft") // draft, submitted, selected, rejected
+  version            Int       @default(1)
+  currency           String    @default("SAR") @db.Char(3)
+  subtotal           Decimal   @db.Decimal(18, 2)
+  totalAmount        Decimal   @db.Decimal(18, 2)
+  quotationDate      DateTime? @db.Date
+  validUntilDate     DateTime? @db.Date
+  expectedDeliveryDate DateTime? @db.Date
+  leadTimeDays       Int?
+  paymentTerms       String?
+  notes              String?
+  createdByUserId    String
+  submittedAt        DateTime? @db.Timestamptz(3)
+  selectedByUserId   String?
+  selectedAt         DateTime? @db.Timestamptz(3)
+  selectionReason    String?
+  rejectedByUserId   String?
+  rejectedAt         DateTime? @db.Timestamptz(3)
+  rejectionReason    String?
+  createdAt          DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @db.Timestamptz(3)
+
+  company         Company                 @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  purchaseRequest PurchaseRequest         @relation(fields: [purchaseRequestId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  vendor          Vendor                  @relation(fields: [vendorId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  createdBy       User                    @relation("SupplierQuotationCreator", fields: [createdByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  selectedBy      User?                   @relation("SupplierQuotationSelector", fields: [selectedByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  rejectedBy      User?                   @relation("SupplierQuotationRejecter", fields: [rejectedByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  lines           SupplierQuotationLine[]
+  orders          PurchaseOrder[]
+
+  @@unique([id, companyId])
+  @@unique([companyId, quotationNumber])
+  @@index([companyId, purchaseRequestId, status])
+  @@index([companyId, vendorId, status])
+  @@index([companyId, status, createdAt])
+}
+
+model SupplierQuotationLine {
+  id                  String   @id @default(uuid())
+  companyId           String
+  supplierQuotationId String
+  requestLineId       String?
+  descriptionSnapshot String
+  categorySnapshot    String?
+  quantity            Decimal  @db.Decimal(18, 3)
+  unitSnapshot        String
+  unitPrice           Decimal  @db.Decimal(18, 2)
+  lineTotal           Decimal  @db.Decimal(18, 2)
+  leadTimeDays        Int?
+  notes               String?
+  createdAt           DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime @updatedAt @db.Timestamptz(3)
+
+  company     Company              @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  quotation   SupplierQuotation    @relation(fields: [supplierQuotationId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  requestLine PurchaseRequestLine? @relation(fields: [requestLineId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([id, companyId])
+  @@index([companyId, supplierQuotationId])
+  @@index([companyId, requestLineId])
+}
+
+/// One immutable goods-receipt event against a Purchase Order.
+/// The legacy whole-order receive endpoint also creates exactly one of these,
+/// covering every remaining quantity, so history stays complete.
+model PurchaseReceipt {
+  id                 String   @id @default(uuid())
+  companyId          String
+  purchaseOrderId    String
+  receiptNumber      String
+  /// full = legacy whole-order receive, partial = line-level receive.
+  receiptKind        String   @default("partial")
+  /// Delivery-note / waybill reference supplied by an authorized user.
+  referenceNumber    String?
+  note               String?
+  receivedByUserId   String
+  receivedAt         DateTime @default(now()) @db.Timestamptz(3)
+  /// True only when purchasing.admin_override authorized an explicit over-receipt.
+  overrideApplied    Boolean  @default(false)
+  overrideReason     String?
+  /// Client Idempotency-Key, unique per company.
+  idempotencyKey     String
+  /// SHA-256 of the canonical request payload; a same-key different-payload retry is a 409.
+  payloadFingerprint String
+  createdAt          DateTime @default(now()) @db.Timestamptz(3)
+
+  company       Company               @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  purchaseOrder PurchaseOrder         @relation(fields: [purchaseOrderId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  receivedBy    User                  @relation("PurchaseReceiptRecorder", fields: [receivedByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  lines         PurchaseReceiptLine[]
+
+  @@unique([id, companyId])
+  @@unique([companyId, receiptNumber])
+  @@unique([companyId, idempotencyKey], map: "PurchaseReceipt_companyId_idempotencyKey_key")
+  @@index([companyId, purchaseOrderId, receivedAt])
+}
+
+model PurchaseReceiptLine {
+  id                  String   @id @default(uuid())
+  companyId           String
+  purchaseReceiptId   String
+  purchaseOrderLineId String
+  quantity            Decimal  @db.Decimal(18, 3)
+  note                String?
+  createdAt           DateTime @default(now()) @db.Timestamptz(3)
+
+  company   Company           @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  receipt   PurchaseReceipt   @relation(fields: [purchaseReceiptId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  orderLine PurchaseOrderLine @relation(fields: [purchaseOrderLineId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([id, companyId])
+  @@index([companyId, purchaseReceiptId])
+  @@index([companyId, purchaseOrderLineId])
+}
+
+/// A supplier return raised against quantities that were actually received.
+/// `pending_approval` and `approved` returns both hold their quantity against
+/// the order line, so two concurrent returns can never over-return.
+/// A `rejected` return releases its quantity; receipt history is never erased.
+model PurchaseReturn {
+  id                 String    @id @default(uuid())
+  companyId          String
+  purchaseOrderId    String
+  returnNumber       String
+  status             String    @default("pending_approval") // pending_approval, approved, rejected
+  /// Bounded reason category — never free text in audit metadata.
+  reasonCode         String
+  note               String?
+  createdByUserId    String
+  createdAt          DateTime  @default(now()) @db.Timestamptz(3)
+  reviewedByUserId   String?
+  reviewedAt         DateTime? @db.Timestamptz(3)
+  reviewNote         String?
+  /// Client Idempotency-Key, unique per company.
+  idempotencyKey     String
+  payloadFingerprint String
+  updatedAt          DateTime  @updatedAt @db.Timestamptz(3)
+
+  company       Company              @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  purchaseOrder PurchaseOrder        @relation(fields: [purchaseOrderId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  createdBy     User                 @relation("PurchaseReturnCreator", fields: [createdByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  reviewedBy    User?                @relation("PurchaseReturnReviewer", fields: [reviewedByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  lines         PurchaseReturnLine[]
+
+  @@unique([id, companyId])
+  @@unique([companyId, returnNumber])
+  @@unique([companyId, idempotencyKey], map: "PurchaseReturn_companyId_idempotencyKey_key")
+  @@index([companyId, purchaseOrderId, status])
+}
+
+model PurchaseReturnLine {
+  id                  String   @id @default(uuid())
+  companyId           String
+  purchaseReturnId    String
+  purchaseOrderLineId String
+  quantity            Decimal  @db.Decimal(18, 3)
+  note                String?
+  createdAt           DateTime @default(now()) @db.Timestamptz(3)
+
+  company     Company           @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  purchaseReturn PurchaseReturn @relation(fields: [purchaseReturnId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  orderLine   PurchaseOrderLine @relation(fields: [purchaseOrderLineId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([id, companyId])
+  @@index([companyId, purchaseReturnId])
+  @@index([companyId, purchaseOrderLineId])
+}
+
+model TrainingCourse {
+  id                 String    @id @default(uuid())
+  companyId          String
+  courseCode         String
+  title              String
+  description        String?
+  category           String?
+  instructorName     String?
+  deliveryMode       String    @default("onsite")
+  location           String?
+  startDate          DateTime? @db.Date
+  endDate            DateTime? @db.Date
+  durationHours      Int?
+  capacity           Int?
+  status             String    @default("draft")
+  createdByUserId    String
+  publishedByUserId  String?
+  publishedAt        DateTime?
+  completedByUserId  String?
+  completedAt        DateTime?
+  cancelledByUserId  String?
+  cancelledAt        DateTime?
+  cancellationReason String?
+  archivedByUserId   String?
+  archivedAt         DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  company     Company              @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  createdBy   User                 @relation("TrainingCourseCreator", fields: [createdByUserId, companyId], references: [id, companyId], onDelete: Restrict)
+  publishedBy User?                @relation("TrainingCoursePublisher", fields: [publishedByUserId, companyId], references: [id, companyId], onDelete: Restrict)
+  completedBy User?                @relation("TrainingCourseCompleter", fields: [completedByUserId, companyId], references: [id, companyId], onDelete: Restrict)
+  cancelledBy User?                @relation("TrainingCourseCanceller", fields: [cancelledByUserId, companyId], references: [id, companyId], onDelete: Restrict)
+  archivedBy  User?                @relation("TrainingCourseArchiver", fields: [archivedByUserId, companyId], references: [id, companyId], onDelete: Restrict)
+  resources    TrainingResource[]
+  assignments  TrainingAssignment[]
+  certificates TrainingCertificate[]
+  evaluations  TrainingEvaluation[]
+
+  @@unique([companyId, courseCode])
+  @@unique([id, companyId])
+  @@index([companyId, status, startDate])
+  @@index([companyId, category])
+  @@index([createdByUserId])
+}
+
+model TrainingResource {
+  id           String   @id @default(uuid())
+  companyId    String
+  courseId     String
+  title        String
+  resourceType String   @default("link")
+  url          String
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  company Company        @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  course  TrainingCourse @relation(fields: [courseId, companyId], references: [id, companyId], onDelete: Restrict)
+
+  @@unique([id, companyId])
+  @@index([companyId, courseId])
+  @@index([courseId, sortOrder])
+}
+
+model TrainingAssignment {
+  id                     String    @id @default(uuid())
+  companyId              String
+  courseId               String
+  employeeId             String
+  employeeNameSnapshot   String
+  employeeNumSnapshot    String
+  departmentIdSnapshot   String?
+  departmentNameSnapshot String?
+  status                 String    @default("assigned")
+  progressPercent        Int       @default(0)
+  assignedByUserId       String
+  assignedAt             DateTime  @default(now())
+  startedAt              DateTime?
+  submittedAt            DateTime?
+  completionNote         String?
+  completedAt            DateTime?
+  reviewedByUserId       String?
+  reviewedAt             DateTime?
+  reviewNote             String?
+  score                  Int?
+  cancelledByUserId      String?
+  cancelledAt            DateTime?
+  cancellationReason     String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  company     Company              @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  course      TrainingCourse       @relation(fields: [courseId, companyId], references: [id, companyId], onDelete: Restrict)
+  employee    Employee             @relation(fields: [employeeId, companyId], references: [id, companyId], onDelete: Restrict)
+  assignedBy  User                 @relation("TrainingAssignmentAssigner", fields: [assignedByUserId, companyId], references: [id, companyId], onDelete: Restrict)
+  reviewedBy  User?                @relation("TrainingAssignmentReviewer", fields: [reviewedByUserId, companyId], references: [id, companyId], onDelete: Restrict)
+  cancelledBy User?                @relation("TrainingAssignmentCanceller", fields: [cancelledByUserId, companyId], references: [id, companyId], onDelete: Restrict)
+  certificate TrainingCertificate?
+  evaluation  TrainingEvaluation?
+
+  @@unique([courseId, employeeId])
+  @@unique([id, companyId])
+  @@index([companyId, employeeId, status])
+  @@index([companyId, courseId, status])
+  @@index([departmentIdSnapshot, status])
+}
+
+/// P4 — internal completion record for a finished training assignment.
+/// Snapshots are frozen at issue time so a later course/employee edit cannot
+/// retroactively change an already-issued certificate. Issue-only by design:
+/// revocation is deliberately not modelled (see the P4 deferred-decisions list).
+/// This is an internal company record and carries no external accreditation.
+model TrainingCertificate {
+  id                   String   @id @default(uuid())
+  companyId            String
+  assignmentId         String
+  courseId             String
+  employeeId           String
+  serialNumber         String
+  courseTitleSnapshot  String
+  employeeNameSnapshot String
+  employeeNumSnapshot  String
+  completedAtSnapshot  DateTime @db.Timestamptz(3)
+  issuedByUserId       String
+  issuedAt             DateTime @default(now()) @db.Timestamptz(3)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  company    Company            @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  assignment TrainingAssignment @relation(fields: [assignmentId, companyId], references: [id, companyId], onDelete: Restrict)
+  course     TrainingCourse     @relation(fields: [courseId, companyId], references: [id, companyId], onDelete: Restrict)
+  employee   Employee           @relation(fields: [employeeId, companyId], references: [id, companyId], onDelete: Restrict)
+  issuedBy   User               @relation("TrainingCertificateIssuer", fields: [issuedByUserId, companyId], references: [id, companyId], onDelete: Restrict)
+
+  @@unique([id, companyId])
+  // One certificate per assignment. The composite FK to (id, companyId) means a
+  // second row under a different company could never resolve, so this is exact.
+  @@unique([assignmentId, companyId])
+  @@unique([companyId, serialNumber])
+  @@index([companyId, employeeId, issuedAt])
+  @@index([companyId, courseId])
+  @@index([issuedByUserId])
+}
+
+/// P4 — reviewer-authored assessment of a completed training assignment.
+/// Performance-adjacent: reading it needs `training.evaluation.view`, so it is
+/// never company-wide-visible the way a course listing is. Scores are bounded
+/// small integers and never enter audit payloads.
+model TrainingEvaluation {
+  id                String   @id @default(uuid())
+  companyId         String
+  assignmentId      String
+  courseId          String
+  employeeId        String
+  effectivenessScore Int
+  knowledgeScore    Int
+  applicationScore  Int
+  recommendation    String
+  comment           String?
+  evaluatedByUserId String
+  evaluatedAt       DateTime @default(now()) @db.Timestamptz(3)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  company     Company            @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  assignment  TrainingAssignment @relation(fields: [assignmentId, companyId], references: [id, companyId], onDelete: Restrict)
+  course      TrainingCourse     @relation(fields: [courseId, companyId], references: [id, companyId], onDelete: Restrict)
+  employee    Employee           @relation(fields: [employeeId, companyId], references: [id, companyId], onDelete: Restrict)
+  evaluatedBy User               @relation("TrainingEvaluationEvaluator", fields: [evaluatedByUserId, companyId], references: [id, companyId], onDelete: Restrict)
+
+  @@unique([id, companyId])
+  // One evaluation per assignment (same composite-FK reasoning as the certificate).
+  @@unique([assignmentId, companyId])
+  @@index([companyId, employeeId, evaluatedAt])
+  @@index([companyId, courseId])
+  @@index([evaluatedByUserId])
+}
+
+model SalaryRecord {
+  id              String    @id @default(uuid())
+  companyId       String
+  employeeId      String
+  baseSalary      Decimal   @db.Decimal(18, 2)
+  currency        String    @default("SAR") @db.Char(3)
+  effectiveFrom   DateTime  @db.Date
+  effectiveTo     DateTime? @db.Date
+  createdByUserId String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  employee     Employee      @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  createdBy    User          @relation("SalaryRecordCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  payrollItems PayrollItem[]
+
+  @@unique([employeeId, effectiveFrom])
+  @@index([companyId, employeeId, effectiveFrom])
+  @@index([companyId, effectiveTo])
+}
+
+model PayrollPeriod {
+  id                     String    @id @default(uuid())
+  companyId              String
+  month                  Int
+  year                   Int
+  status                 String    @default("draft") // draft, calculated, approved, paid
+  createdByUserId        String?
+  calculatedByUserId     String?
+  approvedByUserId       String?
+  paidByUserId           String?
+  calculatedAt           DateTime?
+  approvedAt             DateTime?
+  paidAt                 DateTime?
+  calculationVersion     Int       @default(0)
+  calculationFingerprint String?
+  /// Optimistic concurrency for payment ledger record/void.
+  paymentVersion         Int       @default(0)
+  reopenedByUserId       String?
+  reopenedAt             DateTime? @db.Timestamptz(3)
+  reopenReason           String?
+  ledgerPostedAt         DateTime? @db.Timestamptz(3)
+  ledgerPostingId        String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  company           Company                    @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  createdBy         User?                      @relation("PayrollPeriodCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  calculatedBy      User?                      @relation("PayrollPeriodCalculator", fields: [calculatedByUserId], references: [id], onDelete: Restrict)
+  approvedBy        User?                      @relation("PayrollPeriodApprover", fields: [approvedByUserId], references: [id], onDelete: Restrict)
+  paidBy            User?                      @relation("PayrollPeriodPayer", fields: [paidByUserId], references: [id], onDelete: Restrict)
+  reopenedBy        User?                      @relation("PayrollPeriodReopener", fields: [reopenedByUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  items             PayrollItem[]
+  payments          PayrollPayment[]
+  componentLines    PayrollItemComponentLine[]
+  adjustments       PayrollItemAdjustment[]
+  ledgerPostings    PayrollLedgerPosting[]
+  sourceJournalEntries JournalEntry[]          @relation("JournalEntryPayrollSource")
+
+  @@unique([companyId, year, month])
+  @@unique([id, companyId])
+  @@index([companyId, status])
+}
+
+model PayrollPayment {
+  id                String    @id @default(uuid())
+  companyId         String
+  payrollPeriodId   String
+  amount            Decimal   @db.Decimal(18, 2)
+  currency          String    @default("SAR") @db.Char(3)
+  paymentDate       DateTime  @db.Date
+  reference         String?
+  note              String?
+  status            String    @default("posted") // posted, voided
+  idempotencyKey    String
+  recordedByUserId  String
+  createdAt         DateTime  @default(now())
+  voidedAt          DateTime?
+  voidedByUserId    String?
+  voidReason        String?
+  /// True only for M07 backfill of legacy paid periods — not a bank claim.
+  isLegacyMigration Boolean   @default(false)
+
+  company       Company       @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  payrollPeriod PayrollPeriod @relation(fields: [payrollPeriodId, companyId], references: [id, companyId], onDelete: Restrict)
+  recordedBy    User          @relation("PayrollPaymentRecorder", fields: [recordedByUserId, companyId], references: [id, companyId], onDelete: Restrict)
+  voidedBy      User?         @relation("PayrollPaymentVoider", fields: [voidedByUserId, companyId], references: [id, companyId], onDelete: Restrict)
+
+  @@unique([companyId, payrollPeriodId, idempotencyKey])
+  @@unique([id, companyId])
+  @@index([companyId, payrollPeriodId, createdAt])
+  @@index([companyId, status, paymentDate])
+}
+
+model PayrollItem {
+  id                     String   @id @default(uuid())
+  companyId              String
+  payrollPeriodId        String
+  employeeId             String
+  salaryRecordId         String
+  employeeNameSnapshot   String
+  employeeNumSnapshot    String
+  departmentNameSnapshot String?
+  baseSalary             Decimal  @db.Decimal(18, 2)
+  grossPay               Decimal  @db.Decimal(18, 2)
+  totalDeductions        Decimal  @db.Decimal(18, 2)
+  netPay                 Decimal  @db.Decimal(18, 2)
+  currency               String   @default("SAR") @db.Char(3)
+  status                 String   @default("calculated")
+  calculatedAt           DateTime
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  company        Company                    @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  payrollPeriod  PayrollPeriod              @relation(fields: [payrollPeriodId], references: [id], onDelete: Restrict)
+  employee       Employee                   @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  salaryRecord   SalaryRecord               @relation(fields: [salaryRecordId], references: [id], onDelete: Restrict)
+  componentLines PayrollItemComponentLine[]
+  adjustments    PayrollItemAdjustment[]
+
+  @@unique([payrollPeriodId, employeeId])
+  @@unique([id, companyId])
+  @@index([companyId, payrollPeriodId])
+  @@index([companyId, employeeId])
+  @@index([companyId, status])
+}
+
+model Task {
+  id              String    @id @default(uuid())
+  companyId       String
+  title           String
+  description     String?
+  priority        String    @default("normal") // low, normal, high, urgent
+  dueDate         DateTime? @db.Date
+  createdByUserId String
+  status          String    @default("active") // active, completed, cancelled
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  company     Company          @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  creator     User             @relation("TaskCreator", fields: [createdByUserId, companyId], references: [id, companyId], onDelete: Restrict)
+  assignments TaskAssignment[]
+  comments    TaskComment[]
+  attachments Attachment[]
+
+  @@unique([id, companyId])
+  @@index([companyId, status])
+  @@index([createdByUserId])
+  @@index([dueDate])
+}
+
+/// P4 — task discussion thread. Visibility is derived from the parent task's
+/// own department/assignment scope; a comment is never broader than its task.
+model TaskComment {
+  id           String   @id @default(uuid())
+  companyId    String
+  taskId       String
+  authorUserId String
+  body         String
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  task    Task    @relation(fields: [taskId, companyId], references: [id, companyId], onDelete: Restrict)
+  author  User    @relation("TaskCommentAuthor", fields: [authorUserId, companyId], references: [id, companyId], onDelete: Restrict)
+
+  @@unique([id, companyId])
+  // Keyset pagination support, mirroring ChatMessage's (conversation, createdAt, id).
+  @@index([companyId, taskId, createdAt, id])
+  @@index([authorUserId])
+}
+
+model TaskAssignment {
+  id                String    @id @default(uuid())
+  companyId         String
+  taskId            String
+  employeeId        String
+  status            String    @default("assigned") // assigned, in_progress, submitted, accepted, returned
+  completionDetails String?
+  submittedAt       DateTime?
+  reviewedByUserId  String?
+  reviewedAt        DateTime?
+  reviewNote        String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  company  Company  @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  task     Task     @relation(fields: [taskId, companyId], references: [id, companyId], onDelete: Restrict)
+  employee Employee @relation(fields: [employeeId, companyId], references: [id, companyId], onDelete: Restrict)
+  reviewer User?    @relation("TaskAssignmentReviewer", fields: [reviewedByUserId, companyId], references: [id, companyId], onDelete: Restrict)
+
+  @@unique([taskId, employeeId])
+  @@index([companyId, employeeId, status])
+  @@index([taskId])
+}
+
+model ChatConversation {
+  id              String    @id @default(uuid())
+  companyId       String
+  type            String
+  departmentId    String?
+  directKey       String?
+  title           String?
+  repliesEnabled  Boolean   @default(false)
+  createdByUserId String
+  lastMessageAt   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  company      Company            @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  department   Department?        @relation(fields: [departmentId, companyId], references: [id, companyId], onDelete: Restrict)
+  creator      User               @relation("ChatConversationCreator", fields: [createdByUserId, companyId], references: [id, companyId], onDelete: Restrict)
+  participants ChatParticipant[]
+  messages     ChatMessage[]
+  pins         ChatPinnedMessage[]
+
+  @@unique([id, companyId])
+  @@unique([companyId, directKey])
+  @@unique([companyId, departmentId, type])
+  @@index([companyId, type, lastMessageAt])
+  @@index([departmentId])
+  @@index([createdByUserId])
+}
+
+model ChatParticipant {
+  id             String    @id @default(uuid())
+  companyId      String
+  conversationId String
+  userId         String
+  joinedAt       DateTime  @default(now())
+  lastReadAt     DateTime?
+  active         Boolean   @default(true)
+
+  company      Company          @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  conversation ChatConversation @relation(fields: [conversationId, companyId], references: [id, companyId], onDelete: Restrict)
+  user         User             @relation(fields: [userId, companyId], references: [id, companyId], onDelete: Restrict)
+
+  @@unique([conversationId, userId])
+  @@index([companyId, userId, active])
+  @@index([conversationId])
+}
+
+model ChatMessage {
+  id               String   @id @default(uuid())
+  companyId        String
+  conversationId   String
+  senderUserId     String
+  body             String
+  replyToMessageId String?
+  createdAt        DateTime @default(now())
+
+  company      Company            @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  conversation ChatConversation   @relation(fields: [conversationId, companyId], references: [id, companyId], onDelete: Restrict)
+  sender       User               @relation("ChatMessageSender", fields: [senderUserId, companyId], references: [id, companyId], onDelete: Restrict)
+  replyTo      ChatMessage?       @relation("ChatMessageReply", fields: [replyToMessageId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+  replies      ChatMessage[]      @relation("ChatMessageReply")
+  pins         ChatPinnedMessage[]
+  attachments  Attachment[]
+
+  @@unique([id, companyId])
+  @@index([conversationId, createdAt, id])
+  @@index([companyId, conversationId])
+  @@index([senderUserId])
+  @@index([replyToMessageId])
+}
+
+model ChatPinnedMessage {
+  id             String   @id @default(uuid())
+  companyId      String
+  conversationId String
+  messageId      String
+  pinnedByUserId String
+  pinnedAt       DateTime @default(now())
+
+  company      Company          @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  conversation ChatConversation @relation(fields: [conversationId, companyId], references: [id, companyId], onDelete: Restrict)
+  message      ChatMessage      @relation(fields: [messageId, companyId], references: [id, companyId], onDelete: Restrict)
+  pinnedBy     User             @relation("ChatPinnedMessagePinner", fields: [pinnedByUserId, companyId], references: [id, companyId], onDelete: Restrict)
+
+  @@unique([conversationId, messageId])
+  @@unique([id, companyId])
+  @@index([companyId, conversationId, pinnedAt])
+  @@index([messageId])
+  @@index([pinnedByUserId])
+}
+
+// QA Round 1 — DB-backed attachments (bytea). Staging redeploy + migrate required.
+model Attachment {
+  id                String   @id @default(uuid())
+  companyId         String
+  storageBytes      Bytes
+  originalFilename  String
+  contentType       String
+  byteSize          Int
+  sha256            String
+  uploadedByUserId  String
+  purpose           String // chat | purchasing | task
+  purchaseOrderId   String?
+  chatMessageId     String?
+  taskId            String?
+  createdAt         DateTime @default(now()) @db.Timestamptz(3)
+
+  company        Company        @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  uploadedBy     User           @relation("AttachmentUploader", fields: [uploadedByUserId, companyId], references: [id, companyId], onDelete: Restrict)
+  purchaseOrder  PurchaseOrder? @relation(fields: [purchaseOrderId, companyId], references: [id, companyId], onDelete: Restrict)
+  chatMessage    ChatMessage?   @relation(fields: [chatMessageId, companyId], references: [id, companyId], onDelete: Restrict)
+  task           Task?          @relation(fields: [taskId, companyId], references: [id, companyId], onDelete: Restrict)
+
+  @@unique([id, companyId])
+  @@index([companyId, purpose, createdAt])
+  @@index([companyId, purchaseOrderId])
+  @@index([companyId, chatMessageId])
+  @@index([companyId, taskId])
+  @@index([uploadedByUserId])
+  @@index([sha256])
+}
+
+// Sprint 12J M09 — saved report template configuration only (never SQL / arbitrary joins).
+model SavedReportTemplate {
+  id              String    @id @default(uuid())
+  companyId       String
+  ownerUserId     String
+  name            String
+  builtInKey      String
+  templateVersion Int
+  scopeKind       String    @default("company")
+  departmentId    String?
+  filtersJson     Json
+  preferredFormat String?
+  archivedAt      DateTime? @db.Timestamptz(3)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  owner   User    @relation("SavedReportTemplateOwner", fields: [ownerUserId, companyId], references: [id, companyId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([id, companyId])
+  @@index([companyId, ownerUserId, archivedAt], map: "idx_SavedReportTemplate_owner")
+  @@index([companyId, builtInKey], map: "idx_SavedReportTemplate_key")
+}
+
+/// E1 credential recovery challenge record.
+/// principalId is polymorphic (PlatformPrincipal or User) and intentionally has no Prisma FK.
+/// CHECK constraints in migration SQL enforce domain/purpose/company, token/hash shape,
+/// environment binding, TTL ordering (expiresAt > createdAt), source-hash shape, and lifecycle.
+/// E1 crypto is V1-only (hmac-sha256-v1); changing the recovery pepper invalidates outstanding digests.
+model CredentialRecoveryRequest {
+  id                          String    @id @default(uuid())
+  principalDomain             String
+  principalId                 String
+  companyId                   String?
+  purpose                     String
+  tokenHash                   String?
+  tokenHashAlgorithm          String?
+  environmentBinding          String
+  createdAt                   DateTime  @default(now()) @db.Timestamptz(3)
+  expiresAt                   DateTime  @db.Timestamptz(3)
+  consumedAt                  DateTime? @db.Timestamptz(3)
+  supersededByRequestId       String?
+  invalidatedAt               DateTime? @db.Timestamptz(3)
+  invalidationReason          String?
+  credentialVersionAtIssuance Int
+  initiatedBy                 String
+  initiatorPrincipalId        String?
+  deliveryChannel             String
+  deliveryStatus              String    @default("pending")
+  /// Keyed recovery-src-v1:<64 hex> only — never raw identifiers.
+  requestSourceHash           String?
+  auditEventId                String?
+
+  company       Company?                    @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  supersededBy  CredentialRecoveryRequest?  @relation("RecoverySupersession", fields: [supersededByRequestId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  supersedes    CredentialRecoveryRequest[] @relation("RecoverySupersession")
+  auditEvents   CredentialRecoveryAuditEvent[]
+
+  @@index([principalDomain, principalId, purpose, createdAt], map: "idx_CredentialRecoveryRequest_principal_purpose")
+  @@index([expiresAt], map: "idx_CredentialRecoveryRequest_expiry_cleanup")
+  @@index([companyId, createdAt], map: "idx_CredentialRecoveryRequest_company_created")
+  @@index([auditEventId], map: "idx_CredentialRecoveryRequest_audit_ref")
+}
+
+/// Fixed-column recovery audit evidence. No free-form secret-bearing JSON.
+/// Unresolved subjects must keep subjectId/companyId null (enforced in SQL).
+/// referenceId is the external-safe unique event reference.
+model CredentialRecoveryAuditEvent {
+  id                String   @id @default(uuid())
+  eventType         String
+  timestamp         DateTime @default(now()) @db.Timestamptz(3)
+  actorType         String
+  actorId           String?
+  subjectId         String?
+  subjectDomain     String
+  companyId         String?
+  result            String
+  reasonCode        String
+  recoveryRequestId String?
+  requestId         String
+  /// Keyed recovery-src-v1:<64 hex> only.
+  sourceBucketHash  String?
+  referenceId       String   @unique(map: "CredentialRecoveryAuditEvent_referenceId_key")
+
+  company         Company?                   @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  recoveryRequest CredentialRecoveryRequest? @relation(fields: [recoveryRequestId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([recoveryRequestId, timestamp], map: "idx_CredentialRecoveryAuditEvent_request")
+  @@index([subjectDomain, subjectId, timestamp], map: "idx_CredentialRecoveryAuditEvent_subject")
+  @@index([companyId, timestamp], map: "idx_CredentialRecoveryAuditEvent_company")
+  @@index([requestId], map: "idx_CredentialRecoveryAuditEvent_requestId")
+}
+
+/// Durable recovery rate-limit counters. bucketKeyHash is keyed 64-hex only.
+/// Application increments via atomic INSERT ... ON CONFLICT DO UPDATE.
+model CredentialRecoveryRateLimitBucket {
+  id              String    @id @default(uuid())
+  surface         String
+  dimension       String
+  bucketKeyHash   String
+  windowStartedAt DateTime  @db.Timestamptz(3)
+  windowEndsAt    DateTime  @db.Timestamptz(3)
+  count           Int       @default(0)
+  alertedAt       DateTime? @db.Timestamptz(3)
+  updatedAt       DateTime  @default(now()) @updatedAt @db.Timestamptz(3)
+
+  @@unique([surface, dimension, bucketKeyHash, windowStartedAt], map: "CredentialRecoveryRateLimitBucket_unique")
+  @@index([windowEndsAt], map: "idx_CredentialRecoveryRateLimitBucket_window")
+}

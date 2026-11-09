@@ -6,6 +6,7 @@ export default defineConfig({
   envDir: 'tests/.vitest-env-disabled',
   test: {
     environment: 'node',
+    setupFiles: ['tests/local-postgres-guard.setup.ts'],
     include: ['tests/**/*.test.ts'],
   },
 });
