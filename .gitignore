@@ -1,0 +1,59 @@
+*.iml
+.gradle
+.kotlin
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Environment files: keep only safe examples
+.env
+.env.*
+!.env.example
+!**/.env.example
+.env.local
+.env.*.local
+
+# Dependencies and generated output
+node_modules/
+dist/
+build/
+.next/
+.cache/
+coverage/
+
+# Private backups and database dumps
+mawared_private_backups/
+*.dump
+*.backup
+*.sql.dump
+*.manifest.txt
+Mawared_ERP_*.zip
+
+# Android signing credentials and release packages
+keystore.properties
+*.jks
+*.keystore
+*.apk
+*.aab
+
+# Test artifacts and browser traces
+web/test-results/
+web/playwright-report/
+web/blob-report/
+playwright/.cache/
+
+# Common local credential/configuration files
+credentials.json
+service-account*.json
+google-services.json
+GoogleService-Info.plist
