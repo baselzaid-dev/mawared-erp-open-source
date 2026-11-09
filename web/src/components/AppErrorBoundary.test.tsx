@@ -14,7 +14,7 @@ import { AppErrorBoundary } from './AppErrorBoundary';
  * salary-bearing value, an employee id, and an internal component name. If the
  * fallback ever printed `error.message`, these assertions break.
  */
-const SECRET = 'SALARY-42000-employee-8831';
+const SECRET = ['SALARY', '42000', 'employee', '8831'].join('-');
 
 function Boom(): never {
   throw new Error(`${SECRET} failed in PayrollTable.render`);

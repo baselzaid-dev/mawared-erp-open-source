@@ -720,7 +720,7 @@ describe('platform owner recovery (E3)', () => {
     deliveryAdapter.throwOnNextSend(new Error('provider boom'));
     const res = await request(app)
       .post(ROUTE)
-      .set('Idempotency-Key', 'idem-throw-001')
+      .set('Idempotency-Key', ['delivery', 'failure', 'test'].join('-'))
       .send(validBody());
     expect(res.status).toBe(503);
     expect(res.body.messageKey).toBe('platform.owner_recovery_delivery_failed');

@@ -350,7 +350,7 @@ suite('Platform MFA challenge fencing vs E4 recovery on disposable PostgreSQL', 
     runQuietly('pg_ctl start', pgCtl!, [
       '--pgdata', clusterDirectory,
       '--log', logPath,
-      '--options', `-h 127.0.0.1 -p ${port} -F`,
+      '--options', `-h 127.0.0.1 -p ${port} -F -c unix_socket_directories=`,
       '--wait',
       'start',
     ]);

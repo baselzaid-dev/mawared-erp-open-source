@@ -163,7 +163,7 @@ suite('E2 employee credential reset on disposable PostgreSQL', () => {
     runQuietly('pg_ctl start', pgCtl!, [
       '--pgdata', clusterDirectory,
       '--wait',
-      '-o', `-p ${port} -h 127.0.0.1`,
+      '-o', `-p ${port} -h 127.0.0.1 -c unix_socket_directories=`,
       'start',
     ]);
     clusterStarted = true;

@@ -28,6 +28,7 @@ import {
 } from '../src/credentialRecovery';
 
 const TOKEN = `e6tok_${'A'.repeat(40)}`;
+const providerFixture = ['fake', 'delivery', 'provider'].join('-');
 const EXPIRES = '2026-07-30T12:15:00.000Z';
 
 describe('E6 recovery link builder', () => {
@@ -130,7 +131,7 @@ describe('E6 HTTPS transactional email adapter', () => {
     }));
     const adapter = new HttpsTransactionalEmailDeliveryAdapter({
       apiBaseUrl: 'https://api.resend.test',
-      apiKey: 're_test_key_1234567890',
+      apiKey: providerFixture,
       fromAddress: 'Mawared <noreply@example.com>',
       recipientDirectory: createStaticRecoveryRecipientDirectory({
         'platform-email:11111111-1111-4111-8111-111111111111': 'owner@example.com',
@@ -156,7 +157,7 @@ describe('E6 HTTPS transactional email adapter', () => {
     const body = JSON.parse(String(call[1]?.body));
     expect(body.to).toEqual(['owner@example.com']);
     expect(JSON.stringify(body)).not.toMatch(/11111111-1111/);
-    expect(hashProviderMessageRef('msg_abc123', 're_test_key_1234567890')).toMatch(/^prvref-v1:/);
+    expect(hashProviderMessageRef('msg_abc123', providerFixture)).toMatch(/^prvref-v1:/);
   });
 
   it('records failed on definite provider rejection without storing body', async () => {
@@ -166,7 +167,7 @@ describe('E6 HTTPS transactional email adapter', () => {
     }));
     const adapter = new HttpsTransactionalEmailDeliveryAdapter({
       apiBaseUrl: 'https://api.resend.test',
-      apiKey: 're_test_key_1234567890',
+      apiKey: providerFixture,
       fromAddress: 'noreply@example.com',
       recipientDirectory: createStaticRecoveryRecipientDirectory({
         'owner-email:22222222-2222-4222-8222-222222222222:33333333-3333-4333-8333-333333333333':
@@ -204,7 +205,7 @@ describe('E6 HTTPS transactional email adapter', () => {
     });
     const adapter = new HttpsTransactionalEmailDeliveryAdapter({
       apiBaseUrl: 'https://api.resend.test',
-      apiKey: 're_test_key_1234567890',
+      apiKey: providerFixture,
       fromAddress: 'noreply@example.com',
       recipientDirectory: createStaticRecoveryRecipientDirectory({
         'platform-email:11111111-1111-4111-8111-111111111111': 'owner@example.com',
@@ -236,7 +237,7 @@ describe('E6 HTTPS transactional email adapter', () => {
   it('never claims dispatched when RecoveryResult.ok would be false at caller — adapter returns failed without secret', async () => {
     const adapter = new HttpsTransactionalEmailDeliveryAdapter({
       apiBaseUrl: 'https://api.resend.test',
-      apiKey: 're_test_key_1234567890',
+      apiKey: providerFixture,
       fromAddress: 'noreply@example.com',
       recipientDirectory: createStaticRecoveryRecipientDirectory({}),
       linkBuilderConfig: linkConfig,

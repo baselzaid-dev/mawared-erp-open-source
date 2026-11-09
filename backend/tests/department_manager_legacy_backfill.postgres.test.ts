@@ -437,7 +437,7 @@ postgresDescribe('RC2 DepartmentManager legacy backfill migration', () => {
     runQuietly('pg_ctl start', pgCtl!, [
       '--pgdata', clusterDirectory,
       '--wait',
-      '--options', `-p ${port} -c listen_addresses=127.0.0.1`,
+      '--options', `-p ${port} -c listen_addresses=127.0.0.1 -c unix_socket_directories=`,
       'start',
     ]);
     clusterStarted = true;

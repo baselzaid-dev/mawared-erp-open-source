@@ -222,7 +222,7 @@ postgresDescribe('real PostgreSQL P4 collaboration concurrency', () => {
         runQuietly('pg_ctl start', pgCtl!, [
           '--pgdata', clusterDirectory,
           '--log', logPath,
-          '--options', `-h 127.0.0.1 -p ${port} -F`,
+          '--options', `-h 127.0.0.1 -p ${port} -F -c unix_socket_directories=`,
           '--wait',
           'start',
         ]);

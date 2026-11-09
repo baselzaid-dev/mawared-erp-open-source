@@ -1,0 +1,9 @@
+# Historical fingerprints for verified synthetic test fixtures in the initial import.
+0df5fe17ca8773f8670f71e48228ca1d7671212f:backend/tests/forced_password_change.test.ts:generic-api-key:263
+0df5fe17ca8773f8670f71e48228ca1d7671212f:backend/tests/platform_owner_recovery.test.ts:generic-api-key:723
+0df5fe17ca8773f8670f71e48228ca1d7671212f:backend/tests/authorization_routes.test.ts:generic-api-key:174
+0df5fe17ca8773f8670f71e48228ca1d7671212f:backend/tests/recovery_delivery_e6.test.ts:generic-api-key:133
+0df5fe17ca8773f8670f71e48228ca1d7671212f:backend/tests/recovery_delivery_e6.test.ts:generic-api-key:169
+0df5fe17ca8773f8670f71e48228ca1d7671212f:backend/tests/recovery_delivery_e6.test.ts:generic-api-key:207
+0df5fe17ca8773f8670f71e48228ca1d7671212f:backend/tests/recovery_delivery_e6.test.ts:generic-api-key:239
+0df5fe17ca8773f8670f71e48228ca1d7671212f:web/src/components/AppErrorBoundary.test.tsx:generic-api-key:17

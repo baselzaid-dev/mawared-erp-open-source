@@ -263,7 +263,7 @@ suite('platform recovery E5 on disposable PostgreSQL', () => {
       '--pgdata', clusterDirectory,
       '--log', logPath,
       '--wait',
-      '--options', `-h 127.0.0.1 -p ${port}`,
+      '--options', `-h 127.0.0.1 -p ${port} -c unix_socket_directories=`,
       'start',
     ]);
     clusterStarted = true;

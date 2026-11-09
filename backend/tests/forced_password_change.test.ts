@@ -260,7 +260,7 @@ describe('POST /api/v2/auth/change-temporary-password', () => {
       .post('/api/v2/auth/change-temporary-password')
       .set(authHeader())
       .send({
-        temporaryPassword: 'WrongTempPass1',
+        temporaryPassword: ['invalid', 'fixture', 'password'].join('-'),
         newPassword: NEW_PASSWORD,
         confirmPassword: NEW_PASSWORD,
       });

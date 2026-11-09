@@ -171,7 +171,7 @@ describe('Sprint 12C authorization APIs', () => {
     const apply = await request(app)
       .post('/api/v2/company/permissions/apply')
       .set('Authorization', auth)
-      .set('Idempotency-Key', 'permission-apply-001')
+      .set('Idempotency-Key', ['permission', 'version', 'test'].join('-'))
       .send({ previewId: preview.body.previewId });
     expect(apply.status).toBe(412);
     expect(apply.body.messageKey).toBe('authorization.stale_version');

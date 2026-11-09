@@ -50,7 +50,7 @@ suite('MFA and Platform migrations on disposable PostgreSQL without M02', () => 
     dataDir = mkdtempSync(join(tmpdir(), 'mawared-platform-pg-'));
     port = await freePort();
     run(initdb!, ['-D', dataDir, '--auth=trust', '--username=postgres', '--no-locale', '--encoding=UTF8']);
-    run(pgCtl!, ['-D', dataDir, '-o', `-h 127.0.0.1 -p ${port}`, '-w', 'start']);
+    run(pgCtl!, ['-D', dataDir, '-o', `-h 127.0.0.1 -p ${port} -c unix_socket_directories=`, '-w', 'start']);
     run(createdb!, ['-h', '127.0.0.1', '-p', String(port), '-U', 'postgres', 'mawared_platform']);
     url = `postgresql${'://'}postgres@127.0.0.1:${port}/mawared_platform`;
     const baseSql = `
