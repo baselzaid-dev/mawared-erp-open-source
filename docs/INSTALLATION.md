@@ -13,7 +13,7 @@ docker run --rm --name mawared-dev-postgres \
   -e POSTGRES_PASSWORD -d postgres:16
 ```
 
-For a native installation, create a `mawared_dev` login role and a `mawared_dev` database owned by that role.
+For a native installation, create a `mawared_dev` login role and a `mawared_dev` database owned by that role. Use UTF-8 encoding for Unicode identity normalization.
 
 ## Backend
 

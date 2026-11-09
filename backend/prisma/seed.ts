@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import dotenv from 'dotenv';
 import { assertLocalDatabaseEnvironment } from '../scripts/local-database.mjs';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import {
   normalizeEmail,
@@ -308,8 +308,9 @@ async function main() {
 
 main()
   .catch((e) => {
-    console.error('Local seed failed. Check your local database and configuration.');
-    process.exit(1);
+    const code = e instanceof Prisma.PrismaClientKnownRequestError ? e.code : 'SEED_ERROR';
+    console.error('Local seed failed (' + code + '). Check your local database and configuration.');
+    process.exitCode = 1;
   })
   .finally(async () => {
     await prisma.$disconnect();

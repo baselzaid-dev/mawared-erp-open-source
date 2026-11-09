@@ -32,7 +32,20 @@ jobs:
             -o "$tool_dir/gitleaks.tar.gz"
           echo "a65b5253807a68ac0cafa4414031fd740aeb55f54fb7e55f386acb52e6a840eb  $tool_dir/gitleaks.tar.gz" | sha256sum -c -
           tar -xzf "$tool_dir/gitleaks.tar.gz" -C "$tool_dir" gitleaks
-          "$tool_dir/gitleaks" git --log-opts="--all" --redact=100 --no-banner .
+          result=0
+          for scan_mode in git dir; do
+            options=()
+            if [[ "$scan_mode" == git ]]; then options+=(--log-opts="--all"); fi
+            report="$tool_dir/$scan_mode.json"
+            status=0
+            "$tool_dir/gitleaks" "$scan_mode" "${options[@]}" --redact=100 --no-banner \
+              --report-format json --report-path "$report" . || status=$?
+            if [[ -s "$report" ]]; then
+              jq -r '.[] | "\(.File):\(.StartLine): \(.RuleID)"' "$report"
+            fi
+            if [[ "$status" -ne 0 ]]; then result="$status"; fi
+          done
+          exit "$result"
 
   backend:
     runs-on: ubuntu-24.04
@@ -80,7 +93,7 @@ jobs:
           set -euo pipefail
           data_dir="$(mktemp -d)"
           trap 'pg_ctl -D "$data_dir" -m fast -w stop || true; rm -rf "$data_dir"' EXIT
-          initdb -D "$data_dir" -U mawared_dev -A trust --no-locale
+          initdb -D "$data_dir" -U mawared_dev -A trust --no-locale --encoding=UTF8
           pg_ctl -D "$data_dir" -l "$data_dir/server.log" \
             -o "-h 127.0.0.1 -p 55448 -k $data_dir" -w start
           createdb -h 127.0.0.1 -p 55448 -U mawared_dev mawared_dev
@@ -129,7 +142,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
+        with:
+          log-accepted-android-sdk-licenses: false
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
       - run: ./gradlew --no-daemon :app:assembleDebug :app:testDebugUnitTest :app:lintDebug :app:mawaredDependencySbom
       - run: node --test scripts/security/android_scan_verdict.test.mjs
       - name: Scan the resolved Android dependencies
