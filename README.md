@@ -1,76 +1,57 @@
 # Mawared ERP
 
-**Open-source release candidate — not yet approved for public use.**
+Mawared ERP is an open-source, self-hosted ERP and HR application for organizations managing employees, attendance, leave, payroll, purchasing, and day-to-day work. It includes a React web client, a Kotlin Android app, and a TypeScript API backed by PostgreSQL.
 
-Mawared ERP is a work-in-progress, multi-tenant enterprise resource planning platform intended to help organizations manage everyday operations in one place. The codebase includes a TypeScript/Express backend with Prisma and PostgreSQL, a React-based web client, and a Kotlin/Jetpack Compose Android application.
+**Public community preview.** The source is available under the [MIT License](https://github.com/baselzaid-dev/mawared-erp-open-source/blob/codex/community-release-prep/LICENSE). Start with the synthetic demo company and your own local database. Production readiness, security hardening, and feature coverage are tracked in the [roadmap](https://github.com/baselzaid-dev/mawared-erp-open-source/blob/codex/community-release-prep/docs/ROADMAP.md).
 
-> **Current status:** This repository is being prepared from a separate private development repository with a fresh Git history. The complete application has **not** yet been imported, independently tested, or security-cleared. Do not deploy it to production or use it with real employee/customer data.
+## Get the complete project
 
-## Project goals
+[Browse the complete source](https://github.com/baselzaid-dev/mawared-erp-open-source/tree/codex/community-release-prep) or clone the preview directly.
 
-- Organize employee and departmental information.
-- Support attendance, leave requests, approvals, and payroll-related workflows.
-- Support purchasing, vendors, and other operational modules.
-- Apply role-based authorization and company-level data isolation.
-- Provide web and Android experiences.
+```sh
+git clone --branch codex/community-release-prep --single-branch https://github.com/baselzaid-dev/mawared-erp-open-source.git mawared-erp
+cd mawared-erp
+```
 
-These are project goals and areas represented in the source project, **not a guarantee that every feature is complete or production-ready**.
+## Run it locally
 
-## Technology
+1. Install Node.js 24, npm, Git, and PostgreSQL 16. Use a dedicated local database.
+2. Follow the [installation guide](https://github.com/baselzaid-dev/mawared-erp-open-source/blob/codex/community-release-prep/docs/INSTALLATION.md) to create your local environment files, generate your own keys, apply the migrations, and seed the demo company.
+3. Start the API and web app in separate terminals as described in the guide. Open the local web address and sign in to the demo company.
+4. To try Android, install JDK 21 and Android SDK Platform 36. The guide shows how to build the debug app and connect the emulator to your local API.
 
-| Layer | Technology |
+The [database and secrets guide](https://github.com/baselzaid-dev/mawared-erp-open-source/blob/codex/community-release-prep/docs/DATABASE_AND_SECRETS.md) explains each setting. Example configuration uses placeholders. Real database credentials, signing keys, and business data belong in your own environment.
+
+## What is implemented
+
+| Area | Included in the preview |
 | --- | --- |
-| API | Node.js, TypeScript, Express |
-| Data | PostgreSQL, Prisma |
-| Web | React, TypeScript, Vite |
-| Android | Kotlin, Jetpack Compose |
-| Tests | Vitest and project-specific Android tests |
+| Identity and access | Company login, separate platform administration, role permissions, scoped delegation, session revocation, and MFA for protected accounts |
+| HR | Employee and department records, attendance, corrections and exemptions, leave approvals, and salary records |
+| Finance and payroll | Payroll periods, components, adjustments, payments, ledger posting, chart of accounts, cost centers, and journal entries |
+| Purchasing | Vendors, purchase requests, quotations, orders, receipts, returns, and reports |
+| Collaboration | Tasks, training, chat, notifications, report templates, and attachments |
+| Clients | React web portal and Android app with Arabic and English localization |
 
-## Repository layout
+Feature coverage varies by client. Some Android screens use local repositories or demo data. Statutory payroll, accounting, and tax compliance have not been certified.
 
-| Directory | Purpose |
+## What's left
+
+- Document which workflows are available in each client and close gaps between them.
+- Expand tests for complete business workflows, tenant isolation, and account recovery.
+- Provide reproducible self-hosting packages, operational guides, and an upgrade process.
+- Improve accessibility, complete translations, and document the API.
+- Establish a maintenance and release policy and complete attribution for distributed binaries.
+
+The [roadmap](https://github.com/baselzaid-dev/mawared-erp-open-source/blob/codex/community-release-prep/docs/ROADMAP.md) describes how to verify each milestone.
+
+## Documentation and contributing
+
+| Guide | Use it to |
 | --- | --- |
-| `backend/` | API, Prisma schema, migrations, backend tests |
-| `web/` | Browser application and tests |
-| `app/` | Android application and tests |
-| `scripts/` | Open-source preparation and safety checks |
-| `docs/` | Community and developer documentation |
-
-**Note:** Some of these directories are still incomplete in this release-preparation repository.
-
-## Getting started
-
-The complete source tree and a verified end-to-end setup are not yet available here. Once the import is complete, the intended development workflow is:
-
-1. Install Node.js and the Android development tools needed by the relevant module.
-2. Provision your **own local development PostgreSQL database**. Never connect to the original project's database.
-3. Copy the relevant `.env.example` file to an untracked local `.env`, then supply your own locally generated secrets.
-4. Install dependencies using the module's lockfile.
-5. Apply the reviewed Prisma migrations to your own **disposable development database**.
-6. Run the module's documented build and test commands.
-
-See [Database and secrets safety](docs/DATABASE_AND_SECRETS.md) for mandatory precautions. **Do not execute migrations or seed scripts against production or shared databases.**
-
-## Contributing
-
-We welcome bug reports, documentation improvements, tests, accessibility improvements, and carefully scoped code contributions after the initial public release. See [CONTRIBUTING.md](CONTRIBUTING.md). Please discuss major changes in an issue before opening a large pull request.
-
-## Security and privacy
-
-This repository must never include real database credentials, API tokens, production configuration, employee records, customer information, backups, or private signing keys. Report suspected vulnerabilities privately; see [SECURITY.md](SECURITY.md).
-
-## Roadmap
-
-1. Complete a clean, reviewed source import.
-2. Verify third-party licensing and remove private operational materials.
-3. Run full secret scanning and test/build checks.
-4. Publish accurate setup instructions and example development data.
-5. Obtain explicit owner approval before making this repository public.
-
-## License
-
-Licensed under the [MIT License](LICENSE), subject to verification that all included code and assets can legally be distributed under this license.
-
-## Project status and limitations
-
-This project is under active development. APIs, database migrations, interfaces, and documentation may change. No production support or security response-time guarantee is currently offered.
+| [Architecture](https://github.com/baselzaid-dev/mawared-erp-open-source/blob/codex/community-release-prep/docs/ARCHITECTURE.md) | Understand the API, clients, and database |
+| [Development](https://github.com/baselzaid-dev/mawared-erp-open-source/blob/codex/community-release-prep/docs/DEVELOPMENT.md) | Run checks and work on the project |
+| [API overview](https://github.com/baselzaid-dev/mawared-erp-open-source/blob/codex/community-release-prep/docs/API_OVERVIEW.md) | Find the endpoint groups and their source files |
+| [Contributing](https://github.com/baselzaid-dev/mawared-erp-open-source/blob/codex/community-release-prep/CONTRIBUTING.md) and [community](https://github.com/baselzaid-dev/mawared-erp-open-source/blob/codex/community-release-prep/docs/COMMUNITY.md) | Report a bug, propose a change, or find a first contribution |
+| [Security policy](https://github.com/baselzaid-dev/mawared-erp-open-source/blob/codex/community-release-prep/SECURITY.md) and [verification audit](https://github.com/baselzaid-dev/mawared-erp-open-source/blob/codex/community-release-prep/OPEN_SOURCE_RELEASE_AUDIT.md) | Report vulnerabilities privately and review the tested scope |
+| [Third-party notices](https://github.com/baselzaid-dev/mawared-erp-open-source/blob/codex/community-release-prep/THIRD_PARTY_NOTICES.md) | Review dependency and asset attribution |
