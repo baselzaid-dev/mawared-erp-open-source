@@ -1,0 +1,180 @@
+name: Community checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: community-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repository:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - run: python3 scripts/prepublish_scan.py --history
+      - name: Scan Git history with Gitleaks
+        run: |
+          set -euo pipefail
+          tool_dir="$(mktemp -d)"
+          trap 'rm -rf "$tool_dir"' EXIT
+          curl --fail --silent --show-error --location --proto '=https' \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.28.0/gitleaks_8.28.0_linux_x64.tar.gz \
+            -o "$tool_dir/gitleaks.tar.gz"
+          echo "a65b5253807a68ac0cafa4414031fd740aeb55f54fb7e55f386acb52e6a840eb  $tool_dir/gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf "$tool_dir/gitleaks.tar.gz" -C "$tool_dir" gitleaks
+          result=0
+          for scan_mode in git dir; do
+            options=()
+            if [[ "$scan_mode" == git ]]; then options+=(--log-opts="--all"); fi
+            report="$tool_dir/$scan_mode.json"
+            status=0
+            "$tool_dir/gitleaks" "$scan_mode" "${options[@]}" --redact=100 --no-banner \
+              --report-format json --report-path "$report" . || status=$?
+            if [[ -s "$report" ]]; then
+              jq -r '.[] | "\(.File):\(.StartLine): \(.RuleID)"' "$report"
+            fi
+            if [[ "$status" -ne 0 ]]; then result="$status"; fi
+          done
+          exit "$result"
+
+  backend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - run: npm ci
+      - run: npm run build
+      - run: npm run typecheck
+      - run: npm run test:local-db-guard
+      - run: npm test -- --exclude 'tests/*.postgres.test.ts'
+      - run: npm audit --audit-level=high
+
+  postgres:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Install PostgreSQL server binaries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-16
+          echo /usr/lib/postgresql/16/bin >> "$GITHUB_PATH"
+      - run: npm ci
+      - name: Migrate and seed a fresh loopback cluster
+        run: |
+          set -euo pipefail
+          data_dir="$(mktemp -d)"
+          trap 'pg_ctl -D "$data_dir" -m fast -w stop || true; rm -rf "$data_dir"' EXIT
+          initdb -D "$data_dir" -U mawared_dev -A trust --no-locale --encoding=UTF8
+          pg_ctl -D "$data_dir" -l "$data_dir/server.log" \
+            -o "-h 127.0.0.1 -p 55448 -k $data_dir" -w start
+          createdb -h 127.0.0.1 -p 55448 -U mawared_dev mawared_dev
+          export DATABASE_URL="postgresql://mawared_dev:replace-local-password@127.0.0.1:55448/mawared_dev"
+          export DIRECT_URL="$DATABASE_URL"
+          export MAWARED_DEV_SEED_PASSWORD="$(openssl rand -hex 24)"
+          npm run db:migrate
+          npm run db:migrate
+          npm run seed
+      - name: Run PostgreSQL suites with disposable clusters
+        env:
+          MAWARED_PG_TEST_REQUIRE: '1'
+        run: npm run test:postgres
+
+  web:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run build
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - run: npm audit --audit-level=high
+
+  android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
+        with:
+          log-accepted-android-sdk-licenses: false
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
+      - run: ./gradlew --no-daemon --console=plain :app:assembleDebug :app:testDebugUnitTest :app:lintDebug :app:mawaredDependencySbom
+      - name: Summarize Android unit tests
+        run: |
+          python3 - <<'PYTHON'
+          from pathlib import Path
+          from xml.etree import ElementTree
+
+          files = list(Path("app/build/test-results/testDebugUnitTest").glob("TEST-*.xml"))
+          if not files:
+              raise SystemExit("Android unit test reports are missing")
+          totals = {key: 0 for key in ("tests", "failures", "errors", "skipped")}
+          for path in files:
+              suite = ElementTree.parse(path).getroot()
+              for key in totals:
+                  totals[key] += int(suite.get(key, 0))
+          print("Android unit tests: " + ", ".join(f"{key}={value}" for key, value in totals.items()))
+          if totals["tests"] <= totals["skipped"] or totals["failures"] or totals["errors"]:
+              raise SystemExit("Android unit tests did not complete successfully")
+          PYTHON
+      - run: node --test scripts/security/android_scan_verdict.test.mjs
+      - name: Scan the resolved Android dependencies
+        run: |
+          set -euo pipefail
+          tool_dir="$(mktemp -d)"
+          trap 'rm -rf "$tool_dir"' EXIT
+          curl --fail --silent --show-error --location --proto '=https' \
+            https://github.com/google/osv-scanner/releases/download/v2.5.0/osv-scanner_linux_amd64 \
+            -o "$tool_dir/osv-scanner"
+          echo "edcfc41d257db36148f065055655fe3fcfc434b0b423ea67468a84c207524e0c  $tool_dir/osv-scanner" | sha256sum -c -
+          chmod +x "$tool_dir/osv-scanner"
+          PATH="$tool_dir:$PATH" node scripts/security/scan_android_dependencies.mjs \
+            app/build/reports/sbom/bom.json "$tool_dir/results.json"

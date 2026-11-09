@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="metric_template_id">Identifier</string>
+    <string name="metric_template_employee_id">Employee ID</string>
+    <string name="metric_template_period_id">Period ID</string>
+    <string name="metric_template_request_number">Request number</string>
+    <string name="metric_template_requester_name">Requester name</string>
+    <string name="metric_template_employee_count">Employee count</string>
+    <string name="metric_template_job_title">Job title</string>
+    <string name="metric_template_department_id">Department ID</string>
+    <string name="metric_template_joining_date">Joining date</string>
+    <string name="metric_template_is_archived">Archive status</string>
+    <string name="metric_template_archived_at">Archived at</string>
+    <string name="metric_template_include_archived">Include archived</string>
+    <string name="metric_template_archived_count">Archived count</string>
+    <string name="metric_template_payroll_period_id">Payroll period ID</string>
+    <string name="metric_template_base_salary">Base salary</string>
+    <string name="metric_template_payment_date">Payment date</string>
+    <string name="metric_template_reference">Reference</string>
+    <string name="metric_template_voided_at">Voided at</string>
+    <string name="metric_template_legacy_migration">Legacy migration record</string>
+    <string name="metric_template_payment_count">Payment count</string>
+    <string name="metric_template_posted_count">Posted payments</string>
+    <string name="metric_template_voided_count">Voided payments</string>
+    <string name="metric_template_cancelled_order_count">Cancelled order count</string>
+    <string name="metric_template_average_score">Average score</string>
+    <string name="metric_template_delivery_mode">Delivery mode</string>
+</resources>

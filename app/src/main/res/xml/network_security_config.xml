@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Release/base policy: NO cleartext HTTP anywhere.
+    The debug build overrides this file (app/src/debug/res/xml/…) to allow
+    cleartext ONLY to the local emulator host (10.0.2.2) and localhost.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>

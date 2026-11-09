@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
-"""Stage a clean-source import from a local checkout, without copying Git history.
+"""List candidates for a clean-source import from a local checkout, without copying Git history.
 
-Default mode is dry-run. This script never pushes, changes repository visibility,
-runs deployment commands, or claims a security review is complete.
+This inventory command does not write files. Review each candidate before transfer.
 """
 from __future__ import annotations
 import argparse
 import pathlib
-import shutil
 import sys
 
 EXCLUDED_DIRS = {
@@ -60,8 +58,6 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=pathlib.Path, required=True)
     parser.add_argument("--destination", type=pathlib.Path, required=True)
-    parser.add_argument("--apply", action="store_true",
-                        help="Copy candidates locally; NEVER pushes")
     args = parser.parse_args()
     source = args.source.resolve()
     dest = args.destination.resolve()
@@ -82,14 +78,9 @@ def main() -> int:
             continue  # Preserve the reviewed public-release documentation.
         candidates.append((path, dest / relative))
     candidates.sort(key=lambda item: str(item[0]))
-    for original, target in candidates:
-        print(f"{'COPY' if args.apply else 'WOULD COPY'} {original.relative_to(source)}")
-        if args.apply:
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(original, target)
-    print(f"{len(candidates)} candidates; {'copied locally' if args.apply else 'dry run only'}.")
-    print("IMPORTANT: Review every copied file, run a dedicated secret scanner,")
-    print("check licenses and run tests BEFORE staging or pushing to GitHub.")
+    for original, _ in candidates:
+        print(original.relative_to(source))
+    print(f"{len(candidates)} paths require individual review.")
     return 0
 
 if __name__ == "__main__":

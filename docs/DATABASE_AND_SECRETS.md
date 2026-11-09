@@ -1,47 +1,25 @@
-# Database, credentials, and privacy safety
+# Database and secrets
 
-Mawared ERP's public source release must be **code-only**. Do not copy or export the original project's live database.
+The project uses PostgreSQL with Prisma. Provision your own database, roles, and runtime keys. Follow [Installation](INSTALLATION.md) to set up a local instance.
 
-## What may be published after review
+## Local database writes
 
-- Prisma `schema.prisma` (database models, fields, relations, indexes).
-- Schema migrations that contain only reviewed DDL and safe, non-sensitive operations.
-- Sanitized environment templates with placeholders.
-- Deterministic demo/test fixtures containing entirely fictional names, emails, identifiers, and organizations.
-- Instructions for setting up a new local development database.
+`npm run db:migrate` and `npm run seed` validate both Prisma URLs before writing. They require an explicit loopback IP and port, a matching `mawared_dev` or `mawared_test` database and login role, and the same target for both URLs. They refuse staging and production modes. A local port can be forwarded elsewhere, so run these commands on a dedicated instance and keep tunnels to other databases closed.
 
-## What must never be published
+The seed uses fictional accounts. Rerunning it does not reset an existing account's password. The integration runner normally creates temporary clusters. An attached test URL must use the dedicated `mawared_test` role and database and will receive test writes.
 
-- Real `DATABASE_URL` or `DIRECT_URL` values, database hosts with embedded credentials, passwords, JWT signing secrets, MFA encryption keys, recovery peppers, session tokens, provider API keys, or cloud service-role keys.
-- Database dumps, SQL exports, backups, WAL archives, raw query logs, production telemetry, or application logs containing customer/employee information.
-- Real company names, employee names, payroll amounts, identification numbers, email addresses, phone numbers, addresses, access records, attendance history, or other personal information.
-- Android release keystores, signing passwords, cloud credentials, service account JSON, or unredacted deployment configuration.
-- Internal access procedures, emergency recovery credentials, or operational runbooks that reveal private infrastructure.
+For independently operated deployments, apply reviewed migrations separately using the matching Prisma version, a dedicated migration role, and your own recoverable backup.
 
-## Migration and seed review
+| Setting | Use |
+| --- | --- |
+| `DATABASE_URL` and `DIRECT_URL` | Application and direct migration connections |
+| `JWT_SECRET`, `PLATFORM_JWT_SECRET` | Independent token signing secrets, at least 32 bytes each |
+| `MFA_ENCRYPTION_KEY` | Base64-encoded 32-byte encryption key |
+| `HOST`, `PORT`, `CORS_ORIGINS` | Listener and exact browser origins |
+| `TRUST_PROXY_HOPS` | Explicit proxy trust, default 0. Match the enforced network topology before setting a positive value |
+| `MAWARED_DEV_SEED_PASSWORD` | Unique local demo admin password |
+| `VITE_API_BASE_URL` | Browser-visible API origin |
+| `GEMINI_API_KEY`, `GEMINI_MODEL` | Optional server-side AI integration. Prompts sent to the endpoint may be forwarded to the provider |
+| `CREDENTIAL_RECOVERY_TOKEN_PEPPER` and recovery delivery settings | Optional server-side delivery and token protection. See [delivery configuration](../backend/src/credentialRecovery/deliveryFactory.ts) |
 
-Migrations can contain data as well as schema changes. Inspect every migration and seed file before publication. Remove or rewrite any `INSERT`, `UPDATE`, `COPY`, or other statements embedding real users, customer information, real domains, tokens, or privileged account credentials.
-
-A seed script should be **opt-in**, run only against a fresh local database, and use clearly fictional demo data. Do not include a known default admin password suitable for deployment.
-
-## Local development setup
-
-1. Create a brand-new PostgreSQL instance or database under your own control.
-2. Copy `backend/.env.example` to `backend/.env`; the real file is Git-ignored.
-3. Set `DATABASE_URL` and `DIRECT_URL` to **your own development database**.
-4. Generate unique local signing/encryption secrets; never reuse the original project's secrets.
-5. Review migrations before applying them. Run them only against disposable development databases.
-6. Keep environment files, backups, logs, and test outputs out of Git.
-
-## Required checks before publication
-
-- Search the entire candidate tree and any included Git history with a dedicated secret scanner.
-- Review database migrations, seeds, test fixtures, and snapshots manually.
-- Inspect any third-party code, fonts, icons, images, and data for redistribution rights.
-- Check GitHub Actions for secret exposure and unsafe execution of untrusted pull requests.
-- Confirm that no source code contains hardcoded production service URLs or privileged tokens.
-- Rotate any credentials that may already have been exposed elsewhere; deleting a file is not sufficient.
-
-## Safety boundary
-
-A new Git history prevents accidental publication of the old repository's history. It **does not** make copied source files safe automatically. Never switch this repository to Public until the checks are complete and the owner explicitly approves.
+Keep real values in ignored local files or a secrets manager. Android network origins and web build variables are public configuration. Treat a real credential in Git or CI as exposed. Rotate it and report its path, line, category, and remediation without the value.
